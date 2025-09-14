@@ -22,8 +22,6 @@
 - **확장성**: 마이크로서비스 아키텍처로 다양한 교육 환경에 적용 가능
 - **오픈소스**: MIT 라이선스로 자유로운 사용 및 기여 환경
 
-> 💡 **실제 검증**: 전북대학교에서 운영 중인 **JEduTools** 플랫폼의 일부로 실제 교육 현장에서 검증된 솔루션입니다.
-
 ## 주요 기능
 
 ### WebIDE - "언제 어디서나 똑같은 나만의 개발 환경"
@@ -68,7 +66,7 @@
 ## 운영 환경
 
 - **Production URL**: [https://jcode.jbnu.ac.kr](https://jcode.jbnu.ac.kr/about)
-- **Infrastructure**: 전북대학교 JCloud (교내 클라우드 플랫폼)
+- **Infrastructure**: JCloud (교내 클라우드 플랫폼)
 - **Parent Project**: JEduTools 교육 도구 통합 플랫폼
 - **Authentication**: JEduTools 통합 로그인 시스템 연동
 - **Documentation**: [JCode 사용 메뉴얼](https://jhelper.jbnu.ac.kr/JCode)
@@ -219,7 +217,7 @@ frontend/
 - [ ] 코드 통계 - 컴파일, 빌드 학생 간 비교 기능 추가
 
 ### v1.4.0 (장기 계획)
-- [ ] 코드 통계 - 과제에 대한 과거 기록 분석 및 ai 분석 추가가
+- [ ] 코드 통계 - 과제에 대한 과거 기록 분석 및 ai 분석 추가
 
 ---
 
