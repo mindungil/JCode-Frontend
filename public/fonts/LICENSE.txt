@@ -1,0 +1,35 @@
+Google Fonts License Information
+===============================
+
+This project includes fonts from Google Fonts (https://fonts.google.com/).
+
+All fonts are licensed under the SIL Open Font License (OFL), Version 1.1.
+
+SIL Open Font License Summary:
+- You are free to use, modify, and distribute these fonts
+- Fonts can be embedded in documents and applications
+- Fonts can be sold as part of a larger software package
+- Modified fonts must use a different name
+- Fonts cannot be sold by themselves
+
+For the full license text, please visit:
+https://scripts.sil.org/OFL
+
+Fonts included:
+- Outfit
+- Space Grotesk
+- Montserrat
+- Quicksand
+- Orbitron
+- Exo 2
+- Righteous
+- Comfortaa
+- Russo One
+- Fira Code
+- JetBrains Mono
+- Source Code Pro
+- IBM Plex Mono
+- Noto Sans KR
+- Poppins
+
+These fonts are open source and can be freely used in open source projects.
