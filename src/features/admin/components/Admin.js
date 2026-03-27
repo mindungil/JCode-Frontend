@@ -15,7 +15,9 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -40,7 +42,10 @@ const Admin = () => {
     term: '',
     year: new Date().getFullYear(),
     professor: '',
-    clss: ''
+    clss: '',
+    hwCount: 10,
+    pracEnabled: false,
+    pracCount: 0
   });
 
   const { isDarkMode } = useTheme();
@@ -85,7 +90,10 @@ const Admin = () => {
         term: selectedItem.term || '',
         year: selectedItem.year || new Date().getFullYear(),
         professor: selectedItem.professor || '',
-        clss: selectedItem.clss || ''
+        clss: selectedItem.clss || '',
+        hwCount: selectedItem.hwCount || 10,
+        pracEnabled: selectedItem.pracEnabled || false,
+        pracCount: selectedItem.pracCount || 0
       });
     } else {
       setFormData({
@@ -96,7 +104,10 @@ const Admin = () => {
         term: '',
         year: new Date().getFullYear(),
         professor: '',
-        clss: ''
+        clss: '',
+        hwCount: 10,
+        pracEnabled: false,
+        pracCount: 0
       });
     }
   }, [selectedItem]);
@@ -124,15 +135,19 @@ const Admin = () => {
       term: '',
       year: new Date().getFullYear(),
       professor: '',
-      clss: ''
+      clss: '',
+      hwCount: 10,
+      pracEnabled: false,
+      pracCount: 0
     });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    const numericFields = ['year', 'clss', 'hwCount', 'pracCount'];
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: numericFields.includes(name) ? (parseInt(value) || 0) : value
     }));
   };
 
@@ -152,7 +167,10 @@ const Admin = () => {
             term: formData.term,
             year: formData.year,
             professor: formData.professor,
-            clss: formData.clss
+            clss: formData.clss,
+            hwCount: formData.hwCount,
+            pracEnabled: formData.pracEnabled,
+            pracCount: formData.pracEnabled ? formData.pracCount : 0
           });
         } else if (dialogType === 'add') {
           await adminService.createCourse({
@@ -161,7 +179,10 @@ const Admin = () => {
             term: formData.term,
             year: formData.year,
             professor: formData.professor,
-            clss: formData.clss
+            clss: formData.clss,
+            hwCount: formData.hwCount,
+            pracEnabled: formData.pracEnabled,
+            pracCount: formData.pracEnabled ? formData.pracCount : 0
           });
         }
         fetchCourses();
@@ -333,6 +354,56 @@ const Admin = () => {
                       sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
                     }}
                   />
+                  <TextField
+                    fullWidth
+                    name="hwCount"
+                    label="과제(HW) 개수"
+                    type="number"
+                    value={formData.hwCount}
+                    onChange={handleInputChange}
+                    inputProps={{ min: 10, max: 15 }}
+                    sx={{ mb: 2 }}
+                    InputProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    InputLabelProps={{
+                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                    }}
+                    helperText="10~15 사이의 값 (기본: 10)"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={formData.pracEnabled}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          pracEnabled: e.target.checked,
+                          pracCount: e.target.checked ? (prev.pracCount || 5) : 0
+                        }))}
+                      />
+                    }
+                    label="실습(Prac) 사용"
+                    sx={{ mb: 1, fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                  />
+                  {formData.pracEnabled && (
+                    <TextField
+                      fullWidth
+                      name="pracCount"
+                      label="실습(Prac) 개수"
+                      type="number"
+                      value={formData.pracCount}
+                      onChange={handleInputChange}
+                      inputProps={{ min: 1, max: 10 }}
+                      sx={{ mb: 2 }}
+                      InputProps={{
+                        sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                      }}
+                      InputLabelProps={{
+                        sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
+                      }}
+                      helperText="1~10 사이의 값"
+                    />
+                  )}
                 </>
               ) : (
                 // 사용자 관리 폼

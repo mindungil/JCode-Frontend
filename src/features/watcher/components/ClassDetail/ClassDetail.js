@@ -458,6 +458,7 @@ const ClassDetail = () => {
             onClose={() => setOpenAssignmentDialog(false)}
             onAddAssignment={handleAddAssignment}
             existingAssignments={assignments}
+            hwCount={course?.hwCount || 10}
           />
 
           <EditAssignmentDialog
@@ -469,6 +470,7 @@ const ClassDetail = () => {
             onEditAssignment={handleEditAssignment}
             assignment={editingAssignment}
             existingAssignments={assignments}
+            hwCount={course?.hwCount || 10}
           />
 
           <DeleteAssignmentDialog

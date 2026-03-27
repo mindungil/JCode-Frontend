@@ -17,12 +17,13 @@ import { GlassPaper } from '../../../../../components/ui';
 /**
  * 과제 수정 다이얼로그 컴포넌트
  */
-const EditAssignmentDialog = ({ 
-  open, 
-  onClose, 
-  onEditAssignment, 
+const EditAssignmentDialog = ({
+  open,
+  onClose,
+  onEditAssignment,
   assignment = null,
-  existingAssignments = [] 
+  existingAssignments = [],
+  hwCount = 10
 }) => {
   const [editingAssignment, setEditingAssignment] = useState(null);
 
@@ -109,7 +110,7 @@ const EditAssignmentDialog = ({
             gap: 1
           }}>
             <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
-            현재 버전에서는 과제코드가 hw1~hw10까지만 지원됩니다.
+            과제코드는 hw1~hw{hwCount}까지 지원됩니다.
           </Typography>
         </Box>
         
@@ -135,12 +136,12 @@ const EditAssignmentDialog = ({
                 }
               }}
             >
-              {[...Array(10)].map((_, index) => {
+              {[...Array(hwCount)].map((_, index) => {
                 const code = `hw${index + 1}`;
                 const exists = isAssignmentCodeExists(code) && code !== editingAssignment?.originalAssignmentName;
                 return (
-                  <MenuItem 
-                    key={index} 
+                  <MenuItem
+                    key={index}
                     value={code}
                     disabled={exists}
                     sx={{
