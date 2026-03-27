@@ -571,6 +571,7 @@ const WebIDECourses = () => {
                           startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
                           onClick={() => handleWebIDEOpen(course.courseId, true)}
                           size="small"
+                          disabled={actionLoading}
                           sx={{
                             fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
                             fontSize: '0.75rem',
