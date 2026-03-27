@@ -34,6 +34,7 @@ const Admin = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogType, setDialogType] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     studentNum: '',
@@ -149,6 +150,8 @@ const Admin = () => {
 
   // 제출 핸들러
   const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
       if (currentTab === 2) { // 수업 관리 탭
         if (!formData.courseName || !formData.courseCode || !formData.term || !formData.year || !formData.professor || !formData.clss) {
@@ -198,11 +201,15 @@ const Admin = () => {
       handleCloseDialog();
     } catch (error) {
       ////console.error('작업 실패:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // 삭제 핸들러
   const handleDelete = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
       if (currentTab === 2) {
         await adminService.deleteCourse(selectedItem.courseId);
@@ -221,6 +228,8 @@ const Admin = () => {
         error.response?.status === 403 ? "삭제 권한이 없습니다." :
         (currentTab === 2 ? "수업 삭제 중 오류가 발생했습니다." : "사용자 삭제 중 오류가 발생했습니다.");
       toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -452,10 +461,11 @@ const Admin = () => {
           >
             취소
           </Button>
-          <Button 
+          <Button
             onClick={dialogType === 'delete' ? handleDelete : handleSubmit}
             variant="contained"
             color={dialogType === 'delete' ? 'error' : 'primary'}
+            disabled={submitting}
             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
           >
             {dialogType === 'add' ? '추가' :

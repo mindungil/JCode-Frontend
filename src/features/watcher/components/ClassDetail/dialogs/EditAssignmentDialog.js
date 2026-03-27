@@ -25,6 +25,7 @@ const EditAssignmentDialog = ({
   existingAssignments = [],
   hwCount = 10
 }) => {
+  const [loading, setLoading] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
 
   // assignment가 변경될 때마다 editingAssignment 업데이트
@@ -54,11 +55,15 @@ const EditAssignmentDialog = ({
 
   // 과제 수정 처리
   const handleEditAssignment = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await onEditAssignment(editingAssignment);
       handleClose();
     } catch (error) {
       //console.error('과제 수정 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -270,7 +275,7 @@ const EditAssignmentDialog = ({
           onClick={handleEditAssignment} 
           variant="contained"
           size="small"
-          disabled={!isFormValid()}
+          disabled={loading || !isFormValid()}
           sx={{ 
             fontFamily: FONT_FAMILY,
             fontSize: '0.75rem',

@@ -35,12 +35,12 @@ const WithdrawUserDialog = ({
     onClose();
   };
 
+  const [loading, setLoading] = useState(false);
+
   // 사용자 탈퇴 처리
   const handleWithdrawUser = async () => {
-    if (confirmText !== '사용자를 탈퇴시키겠습니다') {
-      return; // 확인 문구가 일치하지 않으면 처리하지 않음
-    }
-
+    if (confirmText !== '사용자를 탈퇴시키겠습니다' || loading) return;
+    setLoading(true);
     try {
       await onWithdrawUser({
         userId: user?.userId,
@@ -50,6 +50,8 @@ const WithdrawUserDialog = ({
       handleClose();
     } catch (error) {
       //console.error('사용자 탈퇴 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,7 +125,7 @@ const WithdrawUserDialog = ({
           variant="contained"
           color="error"
           size="small"
-          disabled={!isConfirmTextValid}
+          disabled={loading || !isConfirmTextValid}
           sx={{ 
             fontFamily: FONT_FAMILY,
             fontSize: '0.75rem',

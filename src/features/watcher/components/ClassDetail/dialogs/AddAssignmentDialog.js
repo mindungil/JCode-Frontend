@@ -24,6 +24,7 @@ const AddAssignmentDialog = ({
   existingAssignments = [],
   hwCount = 10
 }) => {
+  const [loading, setLoading] = useState(false);
   const [newAssignment, setNewAssignment] = useState({
     assignmentName: '',
     assignmentDescription: '',
@@ -56,12 +57,16 @@ const AddAssignmentDialog = ({
 
   // 과제 추가 처리
   const handleAddAssignment = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await onAddAssignment(newAssignment);
       resetForm();
       onClose();
     } catch (error) {
       //console.error('과제 추가 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -268,7 +273,7 @@ const AddAssignmentDialog = ({
           onClick={handleAddAssignment} 
           variant="contained"
           size="small"
-          disabled={!isFormValid()}
+          disabled={loading || !isFormValid()}
           sx={{ 
             fontFamily: FONT_FAMILY,
             fontSize: '0.75rem',

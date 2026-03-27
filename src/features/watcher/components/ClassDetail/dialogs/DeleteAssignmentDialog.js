@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -25,13 +25,19 @@ const DeleteAssignmentDialog = ({
     onClose();
   };
 
+  const [loading, setLoading] = useState(false);
+
   // 과제 삭제 처리
   const handleDeleteAssignment = async () => {
+    if (loading) return;
+    setLoading(true);
     try {
       await onDeleteAssignment(assignment);
       handleClose();
     } catch (error) {
       //console.error('과제 삭제 실패:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,6 +87,7 @@ const DeleteAssignmentDialog = ({
           variant="contained"
           color="error"
           size="small"
+          disabled={loading}
           sx={{ 
             fontFamily: FONT_FAMILY,
             fontSize: '0.75rem',
