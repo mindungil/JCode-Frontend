@@ -125,7 +125,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
         
         // 관리자/조교/교수 역할을 확인할 수 있는 정보가 있는 경우 제외
         const userInfo = dataToUse.find(s => String(s.student_num || '') === String(item.student_num || ''));
-        if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'ASSISTANT' || userInfo.role === 'PROFESSOR' ||
+        if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'PROFESSOR' ||
                          userInfo.courseRole === 'ADMIN' || userInfo.courseRole === 'ASSISTANT' || userInfo.courseRole === 'PROFESSOR')) {
           return false;
         }
@@ -137,7 +137,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
         // 기본 정보가 없는 경우 제외
         if (!submission.student_num) return false;
         
-        return submission.role !== 'PROFESSOR' && submission.role !== 'ASSISTANT' && submission.role !== 'ADMIN' &&
+        return submission.role !== 'PROFESSOR' && submission.role !== 'ADMIN' &&
           submission.courseRole !== 'PROFESSOR' && submission.courseRole !== 'ASSISTANT' && submission.courseRole !== 'ADMIN';
       });
     }

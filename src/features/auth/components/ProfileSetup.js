@@ -98,7 +98,7 @@ const ProfileSetup = ({ isEditMode, initialData }) => {
           onClose: () => window.location.reload()
         });
       } else {
-        const defaultPath = getDefaultRoute(decodedToken.role);
+        const defaultPath = getDefaultRoute(decodedToken.role, decodedToken.assistantCourses || []);
         toast.success(successMessage, {
           ...toastConfig,
           onClose: () => window.location.href = defaultPath

@@ -362,7 +362,7 @@ const ClassList = () => {
                         }}
                       />
                     </Box>
-                    {user?.role !== 'ASSISTANT' && user?.role !== 'STUDENT' && (
+                    {user?.role !== 'STUDENT' && (
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();

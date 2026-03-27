@@ -23,7 +23,7 @@ export const useStudentManagement = (students = [], userRole = null, isDarkMode 
     // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = students.filter(student => {
       // role 확인
-      if (student.role === 'PROFESSOR' || student.role === 'ASSISTANT' || student.role === 'ADMIN' || 
+      if (student.role === 'PROFESSOR' || student.role === 'ADMIN' ||
           student.courseRole === 'PROFESSOR' || student.courseRole === 'ASSISTANT' || student.courseRole === 'ADMIN') {
         return false;
       }

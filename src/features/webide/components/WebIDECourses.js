@@ -55,7 +55,7 @@ const WebIDECourses = () => {
     doubleCheck: false
   });
   // 사용자 역할 확인 (교수, 조교, 관리자)
-  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ASSISTANT' || user.role === 'ADMIN');
+  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ADMIN' || user.assistantCourses?.length > 0);
 
   // 고유한 연도와 학기 목록 추출
   const years = [...new Set(courses.map(course => course.courseYear))].sort((a, b) => b - a);

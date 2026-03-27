@@ -113,7 +113,7 @@ const Navbar = () => {
   }
 
   const handleLogoClick = () => {
-    const defaultRoute = getDefaultRoute(user?.role);
+    const defaultRoute = getDefaultRoute(user?.role, user?.assistantCourses || []);
     navigate(defaultRoute);
   };
 
@@ -398,9 +398,8 @@ const Navbar = () => {
                             letterSpacing: '0.02em'
                           }}
                         >
-                          {user.role === 'STUDENT' ? '학생' :
+                          {user.role === 'STUDENT' ? (user.assistantCourses?.length > 0 ? '학생/조교' : '학생') :
                            user.role === 'PROFESSOR' ? '교수' :
-                           user.role === 'ASSISTANT' ? '조교' :
                            user.role === 'ADMIN' ? '관리자' : ''}
                         </Typography>
                       </Box>
@@ -692,14 +691,13 @@ const Navbar = () => {
                         letterSpacing: '0.02em'
                       }}
                     >
-                      {user.role === 'STUDENT' ? '학생' :
+                      {user.role === 'STUDENT' ? (user.assistantCourses?.length > 0 ? '학생/조교' : '학생') :
                        user.role === 'PROFESSOR' ? '교수' :
-                       user.role === 'ASSISTANT' ? '조교' :
                        user.role === 'ADMIN' ? '관리자' : ''}
                     </Typography>
                   </Box>
-                  <Typography 
-                    sx={{ 
+                  <Typography
+                    sx={{
                       color: 'text.secondary',
                       fontSize: '0.75rem',
                       letterSpacing: '-0.01em'

@@ -59,15 +59,11 @@ const Admin = () => {
     handleRoleChange 
   } = useAdminData();
 
-  // 탭 섹션 정의
+  // 탭 섹션 정의 (조교 탭 제거 — 수업별로만 관리)
   const sections = useMemo(() => ({
     professors: {
       title: '교수 관리',
       items: users.professors
-    },
-    assistants: {
-      title: '조교 관리',
-      items: users.assistants
     },
     students: {
       title: '학생 관리',
@@ -77,7 +73,7 @@ const Admin = () => {
       title: '수업 관리',
       items: users.courses
     }
-  }), [users.professors, users.assistants, users.students, users.courses]);
+  }), [users.professors, users.students, users.courses]);
 
   // 폼 데이터 초기화
   useEffect(() => {
@@ -154,7 +150,7 @@ const Admin = () => {
   // 제출 핸들러
   const handleSubmit = async () => {
     try {
-      if (currentTab === 3) { // 수업 관리 탭
+      if (currentTab === 2) { // 수업 관리 탭
         if (!formData.courseName || !formData.courseCode || !formData.term || !formData.year || !formData.professor || !formData.clss) {
           toast.error('모든 필드를 입력해주세요.');
           return;
@@ -208,7 +204,7 @@ const Admin = () => {
   // 삭제 핸들러
   const handleDelete = async () => {
     try {
-      if (currentTab === 3) {
+      if (currentTab === 2) {
         await adminService.deleteCourse(selectedItem.courseId);
         toast.success(`${selectedItem.courseName} (${selectedItem.courseCode}) 수업이 삭제되었습니다.`);
         fetchCourses();
@@ -221,9 +217,9 @@ const Admin = () => {
     } catch (error) {
       //console.error('삭제 실패:', error);
       const errorMessage = error.response?.status === 404 ? 
-        (currentTab === 3 ? "존재하지 않는 수업입니다." : "존재하지 않는 사용자입니다.") :
+        (currentTab === 2 ? "존재하지 않는 수업입니다." : "존재하지 않는 사용자입니다.") :
         error.response?.status === 403 ? "삭제 권한이 없습니다." :
-        (currentTab === 3 ? "수업 삭제 중 오류가 발생했습니다." : "사용자 삭제 중 오류가 발생했습니다.");
+        (currentTab === 2 ? "수업 삭제 중 오류가 발생했습니다." : "사용자 삭제 중 오류가 발생했습니다.");
       toast.error(errorMessage);
     }
   };
@@ -245,7 +241,7 @@ const Admin = () => {
         <DialogContent>
           {dialogType !== 'delete' ? (
             <Box sx={{ pt: 2 }}>
-              {currentTab === 3 ? (
+              {currentTab === 2 ? (
                 // 수업 관리 폼
                 <>
                   <TextField
@@ -443,7 +439,7 @@ const Admin = () => {
             </Box>
           ) : (
             <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-              {currentTab === 3 ? 
+              {currentTab === 2 ? 
                 `${selectedItem.courseName} (${selectedItem.courseCode}) 수업을 삭제하시겠습니까?` :
                 `${selectedItem.name} (${selectedItem.email}) 사용자를 삭제하시겠습니까?`}
             </Typography>
@@ -483,17 +479,7 @@ const Admin = () => {
             rowsPerPage={10}
           />
         );
-      case 1: // 조교 관리
-        return (
-          <UserManagementTab
-            users={users.assistants}
-            loading={loading}
-            onRoleChange={handleRoleChange}
-            onOpenDialog={handleOpenDialog}
-            rowsPerPage={10}
-          />
-        );
-      case 2: // 학생 관리
+      case 1: // 학생 관리
         return (
           <UserManagementTab
             users={users.students}
@@ -503,7 +489,7 @@ const Admin = () => {
             rowsPerPage={10}
           />
         );
-      case 3: // 수업 관리
+      case 2: // 수업 관리
         return (
           <CourseManagementTab
             courses={users.courses}

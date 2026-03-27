@@ -23,7 +23,7 @@ export const useCourseData = (courseId) => {
       if (user?.role === 'ADMIN') {
         // 관리자는 직접 강의 정보 조회
         courseData = await fetchCourseInfo(courseId);
-      } else if (user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT' || user?.role === 'STUDENT') {
+      } else if (user?.role === 'PROFESSOR' || user?.role === 'STUDENT') {
         // 교수/조교/학생은 본인이 속한 강의 목록에서 찾기
         const userCoursesData = await fetchUserCoursesDetails();
         courseData = userCoursesData.find(c => c.courseId === parseInt(courseId));

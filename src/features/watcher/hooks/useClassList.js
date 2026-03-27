@@ -18,7 +18,7 @@ export const useClassList = () => {
       
       if (user?.role === 'ADMIN') {
         response = await axios.get('/api/courses');
-      } else if (user?.role === 'ASSISTANT') {
+      } else if (user?.assistantCourses?.length > 0) {
         response = await axios.get('/api/users/me/assistant/courses');
       } else {
         response = await axios.get('/api/users/me/courses');

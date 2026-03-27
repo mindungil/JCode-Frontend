@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }) => {
         
         setUser({
           email: decodedToken.sub,
-          role: decodedToken.role
+          role: decodedToken.role,
+          assistantCourses: decodedToken.assistantCourses || []
         });
       } catch (error) {
         setUser(null);

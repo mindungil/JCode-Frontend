@@ -119,7 +119,7 @@ const AssignmentDetail = () => {
             setSubmissions([]);
           }
         }
-        else if (user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') {
+        else if (user?.role === 'PROFESSOR' || user?.assistantCourses?.includes(parseInt(courseId))) {
           //console.log('교수/조교 - 사용자 강의 정보 로드 시작');
           const courseData = await fetchUserCoursesDetails();
           //console.log('교수/조교 - 사용자 강의 정보 로드 성공:', courseData);
@@ -294,7 +294,7 @@ const AssignmentDetail = () => {
           // 학생인 경우 교수/조교/관리자 제외
           filteredData = enhancedData.filter(item => {
             const userInfo = submissions.find(s => String(s.studentNum) === String(item.student_num));
-            if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'ASSISTANT' || userInfo.role === 'PROFESSOR')) {
+            if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'PROFESSOR' || userInfo.courseRole === 'ASSISTANT')) {
               return false;
             }
             return true;
@@ -303,7 +303,7 @@ const AssignmentDetail = () => {
           // 교수/관리자인 경우 학생만 표시
           filteredData = enhancedData.filter(item => {
             // 역할 정보 확인
-            if (item.role === 'PROFESSOR' || item.role === 'ASSISTANT' || item.role === 'ADMIN' ||
+            if (item.role === 'PROFESSOR' || item.role === 'ADMIN' ||
                 item.courseRole === 'PROFESSOR' || item.courseRole === 'ASSISTANT' || item.courseRole === 'ADMIN') {
               return false;
             }
@@ -491,7 +491,7 @@ const AssignmentDetail = () => {
     // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = submissions.filter(submission => {
       // role 확인
-      if (submission.role === 'PROFESSOR' || submission.role === 'ASSISTANT' || submission.role === 'ADMIN' || 
+      if (submission.role === 'PROFESSOR' || submission.role === 'ADMIN' ||
           submission.courseRole === 'PROFESSOR' || submission.courseRole === 'ASSISTANT' || submission.courseRole === 'ADMIN') {
         return false;
       }
@@ -681,7 +681,7 @@ const AssignmentDetail = () => {
               />
             </TabPanel>
             
-            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.role === 'ASSISTANT') && (
+            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.assistantCourses?.includes(parseInt(courseId))) && (
               <TabPanel value={tabValue} index={1}>
                 <AssignmentStudentsTab 
                   searchQuery={searchQuery}

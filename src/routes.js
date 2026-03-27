@@ -23,20 +23,20 @@ export const routes = [
   {
     path: '/profile-setup',
     element: ProfileSetup,
-    roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'], // 인증된 사용자만 접근 가능
+    roles: ['STUDENT', 'PROFESSOR', 'ADMIN'], // 인증된 사용자만 접근 가능
     showInNav: false,
     //skipProfileCheck: true, // 프로필 체크 스킵 플래그 추가
   },
   {
     path: '/profile/settings',
     element: ProfileSettings,
-    roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'], // 인증된 사용자만 접근 가능
+    roles: ['STUDENT', 'PROFESSOR', 'ADMIN'], // 인증된 사용자만 접근 가능
     showInNav: false,
   },
   {
     path: '/webide/*',
     element: WebIDECourses,
-    roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'],
+    roles: ['STUDENT', 'PROFESSOR', 'ADMIN'],
     showInNav: true,
     label: 'IDE',
     order: 1,
@@ -44,7 +44,7 @@ export const routes = [
   {
     path: '/watcher/*',
     element: WatcherPage,
-    roles: ['STUDENT', 'PROFESSOR', 'ASSISTANT', 'ADMIN'],
+    roles: ['STUDENT', 'PROFESSOR', 'ADMIN'],
     showInNav: true,
     label: 'Watcher',
     order: 2,
@@ -68,17 +68,17 @@ export const routes = [
 ];
 
 // 사용자 역할에 따른 기본 리다이렉트 경로
-export const getDefaultRoute = (role) => {
-  if (!role) return '/login';  // 로그인하지 않은 경우 로그인 페이지로
-  
+export const getDefaultRoute = (role, assistantCourses = []) => {
+  if (!role) return '/login';
+
   switch (role) {
     case 'ADMIN':
       return '/admin';
     case 'PROFESSOR':
-    case 'ASSISTANT':
       return '/watcher';
     case 'STUDENT':
-      return '/webide';
+      // 수업별 조교인 경우 watcher로
+      return assistantCourses.length > 0 ? '/watcher' : '/webide';
     default:
       return '/login';
   }

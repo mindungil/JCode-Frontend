@@ -30,7 +30,6 @@ const UserTableRow = memo(({
           sx={{ minWidth: 120 }}
         >
           <MenuItem value="STUDENT">학생</MenuItem>
-          <MenuItem value="ASSISTANT">조교</MenuItem>
           <MenuItem value="PROFESSOR">교수</MenuItem>
         </Select>
       </TableCell>

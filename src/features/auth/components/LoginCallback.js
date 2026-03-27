@@ -49,7 +49,7 @@ function LoginCallback() {
         }
 
         //console.log('LoginCallback: 기본 경로로 리다이렉트', decodedToken.role);
-        const defaultPath = getDefaultRoute(decodedToken.role);
+        const defaultPath = getDefaultRoute(decodedToken.role, decodedToken.assistantCourses || []);
         //console.log('LoginCallback: 네비게이트 경로', defaultPath);
         navigate(defaultPath, { replace: true });
       } catch (error) {

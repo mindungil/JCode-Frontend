@@ -6,7 +6,6 @@ export const useAdminData = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState({
     professors: [],
-    assistants: [],
     students: [],
     courses: []
   });
@@ -35,9 +34,6 @@ export const useAdminData = () => {
           case 'PROFESSOR':
             acc.professors.push(userData);
             break;
-          case 'ASSISTANT':
-            acc.assistants.push(userData);
-            break;
           case 'STUDENT':
             acc.students.push(userData);
             break;
@@ -45,7 +41,7 @@ export const useAdminData = () => {
             break;
         }
         return acc;
-      }, { professors: [], assistants: [], students: [] });
+      }, { professors: [], students: [] });
 
       setUsers(prev => ({
         ...prev,
