@@ -37,7 +37,8 @@ const ClassDetail = () => {
     loading: courseLoading,
     error: courseError,
     canViewStudents,
-    canCreateAssignments
+    canCreateAssignments,
+    userRole
   } = useCourseData(courseId);
 
   const [students, setStudents] = useState([]);
@@ -403,7 +404,7 @@ const ClassDetail = () => {
           <ClassTabs
             currentTab={currentTab}
             onTabChange={handleTabChange}
-            userRole={user?.role}
+            userRole={userRole}
           />
 
           {/* 학생 목록 탭 */}
@@ -429,7 +430,7 @@ const ClassDetail = () => {
                 });
                 setOpenPromoteDialog(true);
               }}
-              userRole={user?.role}
+              userRole={userRole}
               courseId={courseId}
               isDarkMode={isDarkMode}
             />
@@ -448,7 +449,7 @@ const ClassDetail = () => {
                 setDeletingAssignment(assignment);
                 setOpenDeleteDialog(true);
               }}
-              userRole={user?.role}
+              userRole={userRole}
               courseId={courseId}
             />
           )}

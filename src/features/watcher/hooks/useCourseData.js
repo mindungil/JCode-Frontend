@@ -122,7 +122,7 @@ export const useCourseData = (courseId) => {
 
   const canCreateAssignments = () => {
     const role = getUserCourseRole();
-    return ['ADMIN', 'PROFESSOR'].includes(role);
+    return ['ADMIN', 'PROFESSOR', 'ASSISTANT'].includes(role);
   };
 
   const isStudent = () => {
