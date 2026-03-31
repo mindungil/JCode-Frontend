@@ -290,8 +290,9 @@ const AssignmentDetail = () => {
         
         // 교수/조교/관리자 필터링
         let filteredData;
-        if (user?.role === 'STUDENT') {
-          // 학생인 경우 교수/조교/관리자 제외
+        const isAssistantInCourse = user?.assistantCourses?.includes(parseInt(courseId));
+        if (user?.role === 'STUDENT' && !isAssistantInCourse) {
+          // 순수 학생인 경우 교수/조교/관리자 제외
           filteredData = enhancedData.filter(item => {
             const userInfo = submissions.find(s => String(s.studentNum) === String(item.student_num));
             if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'PROFESSOR' || userInfo.courseRole === 'ASSISTANT')) {
@@ -337,7 +338,7 @@ const AssignmentDetail = () => {
 
   // 탭 변경 핸들러
   const handleTabChange = async (event, newValue) => {
-    if (user?.role === 'STUDENT' && newValue === 1) {
+    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId)) && newValue === 1) {
       try {
         const startTime = performance.now();
         //console.log('[성능] 나의 통계 탭 선택 - 처리 시작');
@@ -652,16 +653,16 @@ const AssignmentDetail = () => {
           />
 
           <Box sx={{ width: '100%' }}>
-            <AssignmentTabs 
+            <AssignmentTabs
               tabValue={tabValue}
               onTabChange={handleTabChange}
-              userRole={user?.role}
+              userRole={course?.courseRole || user?.role}
               studentCount={studentCount}
             />
-            
+
             <TabPanel value={tabValue} index={0}>
-              <StatisticsTab 
-                userRole={user?.role}
+              <StatisticsTab
+                userRole={course?.courseRole || user?.role}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 chartData={chartData}

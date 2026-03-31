@@ -124,8 +124,8 @@ const ClassDetail = () => {
     const params = new URLSearchParams(location.search);
     const tabFromUrl = params.get('tab');
     
-    // 학생인 경우 무조건 assignments 탭으로
-    if (user?.role === 'STUDENT') {
+    // 순수 학생인 경우 무조건 assignments 탭으로 (수업별 조교는 제외)
+    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId))) {
       return 'assignments';
     }
     
@@ -148,8 +148,8 @@ const ClassDetail = () => {
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
-    // 학생인 경우 탭 변경 불가
-    if (user?.role === 'STUDENT') {
+    // 순수 학생인 경우 탭 변경 불가 (수업별 조교는 제외)
+    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId))) {
       return;
     }
     
