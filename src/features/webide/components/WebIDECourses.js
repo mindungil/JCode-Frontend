@@ -242,8 +242,9 @@ const WebIDECourses = () => {
     }
   };
 
-  // 필터링된 강의 목록
+  // 필터링된 강의 목록 (ARCHIVED 강의는 제외)
   const filteredCourses = courses.filter(course => {
+    if (course.status === 'ARCHIVED') return false;
     const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
     const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
     return yearMatch && termMatch;
@@ -511,15 +512,23 @@ const WebIDECourses = () => {
                       >
                         {course.courseName}
                       </Typography>
-                      <Chip 
-                        label={course.courseCode}
-                        color="primary"
-                        size="small"
-                        sx={{ 
-                          mb: 2,
-                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
-                        }}
-                      />
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                        <Chip
+                          label={course.courseCode}
+                          color="primary"
+                          size="small"
+                          sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                        />
+                        {course.status === 'ENDED' && (
+                          <Chip
+                            label="종료됨"
+                            color="warning"
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          />
+                        )}
+                      </Box>
                       <Typography 
                         color="text.secondary" 
                         gutterBottom
@@ -543,6 +552,21 @@ const WebIDECourses = () => {
                       </Typography>
                     </CardContent>
                     <CardActions>
+                      {course.status === 'ENDED' ? (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{
+                            fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                            textAlign: 'center',
+                            width: '100%',
+                            py: 0.5
+                          }}
+                        >
+                          종료된 강의입니다
+                        </Typography>
+                      ) : (
+                      <>
                       <Button
                         fullWidth
                         variant="contained"
@@ -563,7 +587,7 @@ const WebIDECourses = () => {
                       >
                         JCode 실행
                       </Button>
-                      
+
                       {isAuthorized && (
                         <Button
                           fullWidth
@@ -596,6 +620,8 @@ const WebIDECourses = () => {
                         >
                           스냅샷 확인
                         </Button>
+                      )}
+                      </>
                       )}
                     </CardActions>
                   </Card>

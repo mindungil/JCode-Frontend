@@ -19,12 +19,13 @@ const CourseManagementTab = ({
     { id: 'year', label: '년도' },
     { id: 'term', label: '학기' },
     { id: 'clss', label: '분반' },
+    { id: 'status', label: '상태' },
     { id: 'vnc', label: 'VNC 사용' }
   ], []);
 
   // 검색 필드 정의
   const searchFields = useMemo(() => [
-    'courseName', 'courseCode', 'professor', 'year', 'term', 'clss', 'vnc'
+    'courseName', 'courseCode', 'professor', 'year', 'term', 'clss', 'status', 'vnc'
   ], []);
 
   // 정렬 훅

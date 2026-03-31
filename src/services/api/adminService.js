@@ -165,6 +165,51 @@ const adminService = {
   },
 
   /**
+   * 강의 종료 (ADMIN 전용)
+   * PUT /api/courses/{courseId}/end
+   */
+  endCourse: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPut(`/api/courses/${courseId}/end`, {}, {
+      customErrorMessage: '강의 종료에 실패했습니다.',
+      ...options
+    });
+  },
+
+  /**
+   * 강의 아카이브 (ADMIN 전용)
+   * PUT /api/courses/{courseId}/archive
+   */
+  archiveCourse: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPut(`/api/courses/${courseId}/archive`, {}, {
+      customErrorMessage: '강의 아카이브에 실패했습니다.',
+      ...options
+    });
+  },
+
+  /**
+   * 강의 재개설 (ADMIN 전용)
+   * PUT /api/courses/{courseId}/reopen
+   */
+  reopenCourse: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPut(`/api/courses/${courseId}/reopen`, {}, {
+      customErrorMessage: '강의 재개설에 실패했습니다.',
+      ...options
+    });
+  },
+
+  /**
    * 강의 키 재발급 (ADMIN, PROFESSOR 전용)
    * GET /api/courses/{courseId}/key
    */

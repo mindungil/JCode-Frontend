@@ -71,7 +71,9 @@ export const useAdminData = () => {
             year: course.year,
             professor: course.professor || '-',
             clss: course.clss || '-',
-            vnc: course.vnc
+            vnc: course.vnc,
+            status: course.status || 'ACTIVE',
+            endedAt: course.endedAt
           }))
         }));
       }

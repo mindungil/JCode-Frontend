@@ -222,12 +222,36 @@ const Admin = () => {
       }
       handleCloseDialog();
     } catch (error) {
-      //console.error('삭제 실패:', error);
-      const errorMessage = error.response?.status === 404 ? 
+      const errorMessage = error.response?.status === 404 ?
         (currentTab === 2 ? "존재하지 않는 수업입니다." : "존재하지 않는 사용자입니다.") :
         error.response?.status === 403 ? "삭제 권한이 없습니다." :
         (currentTab === 2 ? "수업 삭제 중 오류가 발생했습니다." : "사용자 삭제 중 오류가 발생했습니다.");
       toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 강의 상태 변경 핸들러 (종료/아카이브/재개설)
+  const handleCourseStatusChange = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const courseName = `${selectedItem.courseName} (${selectedItem.courseCode})`;
+      if (dialogType === 'end') {
+        await adminService.endCourse(selectedItem.courseId);
+        toast.success(`${courseName} 강의가 종료되었습니다.`);
+      } else if (dialogType === 'archive') {
+        await adminService.archiveCourse(selectedItem.courseId);
+        toast.success(`${courseName} 강의가 아카이브되었습니다.`);
+      } else if (dialogType === 'reopen') {
+        await adminService.reopenCourse(selectedItem.courseId);
+        toast.success(`${courseName} 강의가 재개설되었습니다.`);
+      }
+      fetchCourses();
+      handleCloseDialog();
+    } catch (error) {
+      toast.error(error.message || '강의 상태 변경에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -239,6 +263,58 @@ const Admin = () => {
     const section = sections[sectionKey];
 
     if (!openDialog) return null;
+
+    // 강의 상태 변경 다이얼로그 (종료/아카이브/재개설)
+    if (['end', 'archive', 'reopen'].includes(dialogType)) {
+      const statusMessages = {
+        end: {
+          title: '강의 종료',
+          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 종료하시겠습니까?\n\n모든 JCode 인스턴스가 삭제됩니다.`,
+          color: 'warning',
+          buttonText: '종료'
+        },
+        archive: {
+          title: '강의 아카이브',
+          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 아카이브하시겠습니까?\n\n네임스페이스가 삭제됩니다.`,
+          color: 'primary',
+          buttonText: '아카이브'
+        },
+        reopen: {
+          title: '강의 재개설',
+          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 재개설하시겠습니까?\n\n네임스페이스가 재생성됩니다.`,
+          color: 'primary',
+          buttonText: '재개설'
+        }
+      };
+      const config = statusMessages[dialogType];
+
+      return (
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+            {config.title}
+          </DialogTitle>
+          <DialogContent>
+            <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif", whiteSpace: 'pre-line' }}>
+              {config.message}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog} sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
+              취소
+            </Button>
+            <Button
+              onClick={handleCourseStatusChange}
+              variant="contained"
+              color={config.color}
+              disabled={submitting}
+              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+            >
+              {config.buttonText}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      );
+    }
 
     return (
       <Dialog open={openDialog} onClose={handleCloseDialog}>
