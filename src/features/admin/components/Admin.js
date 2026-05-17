@@ -142,9 +142,12 @@ const Admin = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const numericFields = ['year', 'clss', 'hwCount', 'pracCount'];
+    let parsed = numericFields.includes(name) ? (parseInt(value) || 0) : value;
+    if (name === 'hwCount') parsed = Math.max(10, Math.min(15, parsed));
+    if (name === 'pracCount') parsed = Math.max(0, Math.min(10, parsed));
     setFormData(prev => ({
       ...prev,
-      [name]: numericFields.includes(name) ? (parseInt(value) || 0) : value
+      [name]: parsed
     }));
   };
 
