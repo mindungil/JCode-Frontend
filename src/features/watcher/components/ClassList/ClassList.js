@@ -76,6 +76,7 @@ const ClassList = () => {
     courseId: null,
   });
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   // 고유한 연도와 학기 목록 (훅에서 제공)
@@ -103,29 +104,33 @@ const ClassList = () => {
 
   const handleAddClass = async () => {
     if (!validateForm()) return;
-    
-    const result = await addClass(newClass);
-    
-    if (result.success) {
-      setOpenDialog(false);
-      setNewClass({
-        code: '',
-        name: '',
-        professor: '',
-        year: new Date().getFullYear(),
-        term: 1,
-        clss: '',
-        vnc: false,
-      });
-      setFormErrors({ courseClss: '', courseCode: '' });
+    if (submitting) return;
+    setSubmitting(true);
 
-      setCourseKeyDialog({
-        open: true,
-        courseKey: result.courseKey,
-        courseId: result.courseId
-      });
-    } else {
-      //console.error('수업 추가 실패:', result.error);
+    try {
+      const result = await addClass(newClass);
+
+      if (result.success) {
+        setOpenDialog(false);
+        setNewClass({
+          code: '',
+          name: '',
+          professor: '',
+          year: new Date().getFullYear(),
+          term: 1,
+          clss: '',
+          vnc: false,
+        });
+        setFormErrors({ courseClss: '', courseCode: '' });
+
+        setCourseKeyDialog({
+          open: true,
+          courseKey: result.courseKey,
+          courseId: result.courseId
+        });
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -138,16 +143,21 @@ const ClassList = () => {
 
   // 재발급 핸들러 (훅에서 제공)
   const handleRegenerateKey = async (courseId) => {
-    const result = await regenerateCourseKey(courseId);
-    
-    if (result.success) {
-      setCourseKeyDialog({
-        open: true,
-        courseKey: result.courseKey,
-        courseId: courseId
-      });
-    } else {
-      //console.error('참가 코드 재발급 실패:', result.error);
+    if (submitting) return;
+    setSubmitting(true);
+
+    try {
+      const result = await regenerateCourseKey(courseId);
+
+      if (result.success) {
+        setCourseKeyDialog({
+          open: true,
+          courseKey: result.courseKey,
+          courseId: courseId
+        });
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -368,6 +378,7 @@ const ClassList = () => {
                           e.stopPropagation();
                           handleRegenerateKey(classItem.courseId);
                         }}
+                        disabled={submitting}
                         startIcon={<RefreshIcon sx={{ fontSize: '1rem' }} />}
                         size="small"
                         variant="outlined"
@@ -625,7 +636,7 @@ const ClassList = () => {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setOpenDialog(false)}>취소</Button>
-              <Button onClick={handleAddClass} variant="contained">추가</Button>
+              <Button onClick={handleAddClass} variant="contained" disabled={submitting}>추가</Button>
             </DialogActions>
           </Dialog>
 
