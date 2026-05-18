@@ -29,7 +29,8 @@ const redirectService = {
       const response = await api.post('/api/redirect', {
         userEmail: redirectData.userEmail,
         courseId: redirectData.courseId,
-        snapshot: redirectData.snapshot || false
+        snapshot: redirectData.snapshot || false,
+        ...(redirectData.assignmentId && { assignmentId: redirectData.assignmentId })
       });
 
       //console.log('리다이렉트 응답:', response);

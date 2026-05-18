@@ -188,15 +188,12 @@ const ClassDetail = () => {
   const isLoading = courseLoading || loading;
   const finalError = courseError || error;
 
-  const handleAddAssignment = async (assignmentData) => {
+  const handleAddAssignment = async (assignmentData, starterFile = null) => {
     try {
       // 사용자 입력 시간을 Date 객체로 변환
       const kickoffDateInput = new Date(assignmentData.kickoffDate);
       const deadlineDateInput = new Date(assignmentData.deadlineDate);
-      
-      // 사용자가 입력한 시간을 그대로 ISO 문자열로 만들기
-      // 예: '2023-08-15T18:00' → '2023-08-15T18:00:00.000Z'
-      // 이렇게 하면 브라우저가 자동으로 UTC로 변환하는 것을 방지
+
       const kickoffDateISO = new Date(
         Date.UTC(
           kickoffDateInput.getFullYear(),
@@ -206,7 +203,7 @@ const ClassDetail = () => {
           kickoffDateInput.getMinutes()
         )
       ).toISOString();
-      
+
       const deadlineDateISO = new Date(
         Date.UTC(
           deadlineDateInput.getFullYear(),
@@ -216,18 +213,29 @@ const ClassDetail = () => {
           deadlineDateInput.getMinutes()
         )
       ).toISOString();
-      
-      await api.post(`/api/courses/${course.courseId}/assignments`, {
+
+      const response = await api.post(`/api/courses/${course.courseId}/assignments`, {
         ...assignmentData,
         kickoffDate: kickoffDateISO,
         deadlineDate: deadlineDateISO
       });
 
+      // 스타터 코드 업로드 (선택)
+      if (starterFile && response.data?.assignmentId) {
+        const formData = new FormData();
+        formData.append('file', starterFile);
+        await api.post(
+          `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+      }
+
       const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
       setAssignments(assignmentsResponse.data);
     } catch (error) {
       setError('과제 추가에 실패했습니다.');
-      throw error; // AddAssignmentDialog에서 오류를 처리할 수 있도록 다시 throw
+      throw error;
     }
   };
 

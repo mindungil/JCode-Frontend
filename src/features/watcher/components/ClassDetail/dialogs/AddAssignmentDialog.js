@@ -23,6 +23,7 @@ const AddAssignmentDialog = ({
   existingAssignments = []
 }) => {
   const [loading, setLoading] = useState(false);
+  const [starterFile, setStarterFile] = useState(null);
   const [newAssignment, setNewAssignment] = useState({
     assignmentName: '',
     assignmentDescription: '',
@@ -45,6 +46,7 @@ const AddAssignmentDialog = ({
       kickoffDate: '',
       deadlineDate: ''
     });
+    setStarterFile(null);
   };
 
   // 다이얼로그 닫기
@@ -58,7 +60,7 @@ const AddAssignmentDialog = ({
     if (loading) return;
     setLoading(true);
     try {
-      await onAddAssignment(newAssignment);
+      await onAddAssignment(newAssignment, starterFile);
       resetForm();
       onClose();
     } catch (error) {
@@ -151,6 +153,36 @@ const AddAssignmentDialog = ({
               rows={4}
               placeholder="과제에 대한 설명을 입력하세요"
             />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Button
+              variant="outlined"
+              component="label"
+              size="small"
+              sx={{
+                fontFamily: FONT_FAMILY,
+                textTransform: 'none',
+                borderRadius: '14px'
+              }}
+            >
+              {starterFile ? `스타터 코드: ${starterFile.name}` : '스타터 코드 업로드 (선택, .zip)'}
+              <input
+                type="file"
+                accept=".zip"
+                hidden
+                onChange={(e) => setStarterFile(e.target.files[0] || null)}
+              />
+            </Button>
+            {starterFile && (
+              <Button
+                size="small"
+                onClick={() => setStarterFile(null)}
+                sx={{ ml: 1, fontSize: '0.7rem' }}
+              >
+                제거
+              </Button>
+            )}
           </Grid>
 
           <Grid item xs={6}>
