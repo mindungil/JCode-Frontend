@@ -72,10 +72,10 @@ const AssignmentsTab = ({
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold' }}>
-                  과제코드
+                  과제명
                 </TableCell>
                 <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold' }}>
-                  과제명
+                  설명
                 </TableCell>
                 <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold' }}>
                   시작일
