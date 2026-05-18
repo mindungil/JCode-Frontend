@@ -74,6 +74,16 @@ const WebIDECourses = () => {
         setCourseAssignments(prev => ({ ...prev, [courseId]: assignments }));
       } catch (err) {
         setCourseAssignments(prev => ({ ...prev, [courseId]: [] }));
+        const status = err?.response?.status;
+        const serverMsg = err?.response?.data?.message;
+        if (status === 403) {
+          toast.error('과제 목록 조회 권한이 없습니다.');
+        } else if (!err.response) {
+          toast.error('네트워크 연결을 확인해주세요.');
+        } else {
+          toast.error(serverMsg || '과제 목록을 불러오는데 실패했습니다.');
+        }
+        console.error(`[Assignments] ${status || 'NETWORK'}: ${serverMsg || err.message}`);
       }
     }
   };
@@ -135,7 +145,20 @@ const WebIDECourses = () => {
       }
 
     } catch (err) {
-      // 에러 처리
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message;
+      let userMsg = '서버 오류가 발생했습니다.';
+      if (!err.response) {
+        userMsg = '네트워크 연결을 확인해주세요.';
+      } else if (status === 404) {
+        userMsg = 'JCode가 아직 생성되지 않았습니다. 잠시 후 다시 시도해주세요.';
+      } else if (status === 403) {
+        userMsg = '해당 강의에 대한 접근 권한이 없습니다.';
+      } else if (serverMsg) {
+        userMsg = serverMsg;
+      }
+      toast.error(userMsg);
+      console.error(`[WebIDE] ${status || 'NETWORK'}: ${serverMsg || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -636,59 +659,61 @@ const WebIDECourses = () => {
                       </>
                       )}
 
-                      {/* 과제 목록 확장 영역 */}
-                      {expandedCourse === course.courseId && (
-                        <Box sx={{ mt: 1, width: '100%' }}>
-                          {!courseAssignments[course.courseId] ? (
-                            <CircularProgress size={20} sx={{ display: 'block', mx: 'auto', my: 1 }} />
-                          ) : courseAssignments[course.courseId].length === 0 ? (
-                            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center', py: 1 }}>
-                              등록된 과제가 없습니다
-                            </Typography>
-                          ) : (
-                            <Stack spacing={0.5}>
-                              {courseAssignments[course.courseId].map((assignment) => (
-                                <Box
-                                  key={assignment.assignmentId}
+                    </CardActions>
+                    {/* 과제 목록 확장 영역 */}
+                    {expandedCourse === course.courseId && (
+                      <Box sx={{ px: 2, pb: 2, pt: 0.5 }}>
+                        {!courseAssignments[course.courseId] ? (
+                          <CircularProgress size={20} sx={{ display: 'block', mx: 'auto', my: 1 }} />
+                        ) : courseAssignments[course.courseId].length === 0 ? (
+                          <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center', py: 1 }}>
+                            등록된 과제가 없습니다
+                          </Typography>
+                        ) : (
+                          <Stack spacing={0.5}>
+                            {courseAssignments[course.courseId].map((assignment) => (
+                              <Box
+                                key={assignment.assignmentId}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  p: 0.75,
+                                  borderRadius: 1,
+                                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                                  '&:hover': {
+                                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                                  }
+                                }}
+                              >
+                                <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif", flex: 1, mr: 1 }}>
+                                  {assignment.assignmentName}
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<CodeIcon sx={{ fontSize: '0.8rem' }} />}
+                                  onClick={() => handleWebIDEOpen(course.courseId, false, assignment.assignmentId)}
+                                  disabled={actionLoading}
                                   sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    p: 0.75,
-                                    borderRadius: 1,
-                                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                                    '&:hover': {
-                                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                                    }
+                                    fontSize: '0.7rem',
+                                    py: 0.25,
+                                    px: 1,
+                                    minHeight: '24px',
+                                    borderRadius: '12px',
+                                    textTransform: 'none',
+                                    whiteSpace: 'nowrap',
+                                    flexShrink: 0
                                   }}
                                 >
-                                  <Typography sx={{ fontSize: '0.75rem', fontFamily: "'Noto Sans KR', sans-serif" }}>
-                                    {assignment.assignmentName}
-                                  </Typography>
-                                  <Button
-                                    size="small"
-                                    variant="outlined"
-                                    startIcon={<CodeIcon sx={{ fontSize: '0.8rem' }} />}
-                                    onClick={() => handleWebIDEOpen(course.courseId, false, assignment.assignmentId)}
-                                    disabled={actionLoading}
-                                    sx={{
-                                      fontSize: '0.65rem',
-                                      py: 0.25,
-                                      px: 1,
-                                      minHeight: '22px',
-                                      borderRadius: '12px',
-                                      textTransform: 'none'
-                                    }}
-                                  >
-                                    IDE 열기
-                                  </Button>
-                                </Box>
-                              ))}
-                            </Stack>
-                          )}
-                        </Box>
-                      )}
-                    </CardActions>
+                                  IDE 열기
+                                </Button>
+                              </Box>
+                            ))}
+                          </Stack>
+                        )}
+                      </Box>
+                    )}
                   </Card>
                 </Grid>
               ))}
