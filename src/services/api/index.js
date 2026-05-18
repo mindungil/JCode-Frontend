@@ -8,4 +8,5 @@ export { default as courseService } from './courseService';
 export { default as assignmentService } from './assignmentService';
 export { default as jcodeService } from './jcodeService';
 export { default as redirectService } from './redirectService';
-export { default as watcherService } from './watcherService'; 
+export { default as watcherService } from './watcherService';
+export { default as dashboardService } from './dashboardService';

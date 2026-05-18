@@ -5,6 +5,7 @@ import {
   Paper,
   Typography,
   Box,
+  Button,
   Fade,
   useTheme
 } from '@mui/material';
@@ -646,11 +647,29 @@ const AssignmentDetail = () => {
     <Fade in={true} timeout={300}>
       <Container maxWidth={false} sx={{ mt: 2, px: 2 }}>
         <GlassPaper>
-          <AssignmentHeader 
+          <AssignmentHeader
             course={course}
             assignment={assignment}
             assignmentId={assignmentId}
           />
+
+          {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.assistantCourses?.includes(parseInt(courseId))) && (
+            <Box sx={{ px: 2, pb: 1, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => navigate(`/watcher/class/${courseId}/assignment/${assignmentId}/dashboard`)}
+                sx={{
+                  fontFamily: "'JetBrains Mono', sans-serif",
+                  fontSize: '0.75rem',
+                  textTransform: 'none',
+                  borderRadius: '14px'
+                }}
+              >
+                제출 현황 대시보드
+              </Button>
+            </Box>
+          )}
 
           <Box sx={{ width: '100%' }}>
             <AssignmentTabs
