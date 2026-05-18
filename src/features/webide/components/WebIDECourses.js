@@ -131,6 +131,17 @@ const WebIDECourses = () => {
     if (actionLoading) return;
     setActionLoading(true);
     try {
+      // JCode가 없을 수 있으므로 먼저 생성 시도 (이미 있으면 서버에서 무시)
+      try {
+        await jcodeService.createJCode(courseId, {
+          userEmail: user.email,
+          snapshot: isSnapshot
+        });
+      } catch (jcodeErr) {
+        // 이미 존재하거나 생성 실패해도 redirect 시도는 계속 진행
+        console.log('[WebIDE] JCode 생성 스킵:', jcodeErr.message);
+      }
+
       const redirectData = await redirectService.redirectToJCode({
         userEmail: user.email,
         courseId: courseId,
@@ -141,7 +152,7 @@ const WebIDECourses = () => {
       if (redirectData?.url) {
         window.open(redirectData.url, '_blank');
       } else {
-        throw new Error("리다이렉트 URL을 찾을 수 없습니다. 서버 응답을 확인해주세요.");
+        throw new Error("리다이렉트 URL을 찾을 수 없습니다.");
       }
 
     } catch (err) {
@@ -149,7 +160,7 @@ const WebIDECourses = () => {
       const serverMsg = err?.response?.data?.message;
       let userMsg = '서버 오류가 발생했습니다.';
       if (!err.response) {
-        userMsg = '네트워크 연결을 확인해주세요.';
+        userMsg = err.message || '네트워크 연결을 확인해주세요.';
       } else if (status === 404) {
         userMsg = 'JCode가 아직 생성되지 않았습니다. 잠시 후 다시 시도해주세요.';
       } else if (status === 403) {
@@ -158,7 +169,7 @@ const WebIDECourses = () => {
         userMsg = serverMsg;
       }
       toast.error(userMsg);
-      console.error(`[WebIDE] ${status || 'NETWORK'}: ${serverMsg || err.message}`);
+      console.error(`[WebIDE] ${status || 'JS'}: ${serverMsg || err.message}`);
     } finally {
       setActionLoading(false);
     }
