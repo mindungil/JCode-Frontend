@@ -145,7 +145,7 @@ const SubmissionDashboard = () => {
                 전체 {data?.totalStudents}명
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                제출 {data?.submittedCount}명
+                참여 {data?.submittedCount}명
               </Typography>
               {data?.flaggedCount > 0 && (
                 <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
