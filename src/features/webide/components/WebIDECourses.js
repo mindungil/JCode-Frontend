@@ -491,12 +491,11 @@ const WebIDECourses = () => {
               </Grid>
             </Grid>
           ) : (
-            <Grid container spacing={3}>
+            <Grid container spacing={3} alignItems="flex-start">
               {filteredCourses.map((course) => (
                 <Grid item xs={12} sm={6} md={4} key={course.courseId}>
-                  <Card 
-                    sx={{ 
-                      height: '100%',
+                  <Card
+                    sx={{
                       display: 'flex',
                       flexDirection: 'column',
                       transition: 'all 0.3s ease',
