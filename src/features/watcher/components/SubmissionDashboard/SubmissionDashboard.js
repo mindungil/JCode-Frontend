@@ -138,7 +138,7 @@ const SubmissionDashboard = () => {
               variant="h5"
               sx={{ fontFamily: FONT_FAMILY, fontWeight: 700 }}
             >
-              제출 현황: {data?.assignmentName}
+              코딩 활동 분석: {data?.assignmentName}
             </Typography>
             <Stack direction="row" spacing={2} sx={{ mt: 0.5 }}>
               <Typography variant="body2" color="text.secondary">

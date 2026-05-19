@@ -666,7 +666,7 @@ const AssignmentDetail = () => {
                   borderRadius: '14px'
                 }}
               >
-                제출 현황 대시보드
+                코딩 활동 분석
               </Button>
             </Box>
           )}
