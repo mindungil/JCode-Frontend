@@ -44,6 +44,7 @@ const Admin = () => {
     year: new Date().getFullYear(),
     professor: '',
     clss: '',
+    vnc: false,
     hwCount: 10,
     pracEnabled: false,
     pracCount: 0
@@ -88,6 +89,7 @@ const Admin = () => {
         year: selectedItem.year || new Date().getFullYear(),
         professor: selectedItem.professor || '',
         clss: selectedItem.clss || '',
+        vnc: Boolean(selectedItem.vnc),
         hwCount: selectedItem.hwCount || 10,
         pracEnabled: selectedItem.pracEnabled || false,
         pracCount: selectedItem.pracCount || 0
@@ -102,6 +104,7 @@ const Admin = () => {
         year: new Date().getFullYear(),
         professor: '',
         clss: '',
+        vnc: false,
         hwCount: 10,
         pracEnabled: false,
         pracCount: 0
@@ -133,6 +136,7 @@ const Admin = () => {
       year: new Date().getFullYear(),
       professor: '',
       clss: '',
+      vnc: false,
       hwCount: 10,
       pracEnabled: false,
       pracCount: 0
@@ -141,7 +145,7 @@ const Admin = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const numericFields = ['year', 'clss', 'hwCount', 'pracCount'];
+    const numericFields = ['year', 'term', 'clss', 'hwCount', 'pracCount'];
     let parsed = numericFields.includes(name) ? (parseInt(value) || 0) : value;
     if (name === 'hwCount') parsed = Math.max(10, Math.min(15, parsed));
     if (name === 'pracCount') parsed = Math.max(0, Math.min(10, parsed));
@@ -170,6 +174,7 @@ const Admin = () => {
             year: formData.year,
             professor: formData.professor,
             clss: formData.clss,
+            vnc: formData.vnc,
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
@@ -182,6 +187,7 @@ const Admin = () => {
             year: formData.year,
             professor: formData.professor,
             clss: formData.clss,
+            vnc: formData.vnc,
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
@@ -368,6 +374,7 @@ const Admin = () => {
                     label="수업 코드"
                     value={formData.courseCode}
                     onChange={handleInputChange}
+                    disabled={dialogType === 'edit'}
                     required
                     sx={{ mb: 2 }}
                     InputProps={{
@@ -395,10 +402,8 @@ const Admin = () => {
                         fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
                       }}
                     >
-                      <MenuItem value="1">1학기</MenuItem>
-                      <MenuItem value="2">2학기</MenuItem>
-                      <MenuItem value="S">여름학기</MenuItem>
-                      <MenuItem value="W">겨울학기</MenuItem>
+                      <MenuItem value={1}>1학기</MenuItem>
+                      <MenuItem value={2}>2학기</MenuItem>
                     </Select>
                   </FormControl>
                   <TextField
@@ -428,6 +433,7 @@ const Admin = () => {
                     type="number"
                     value={formData.clss}
                     onChange={handleInputChange}
+                    disabled={dialogType === 'edit'}
                     required
                     inputProps={{ min: 1 }}
                     sx={{ mb: 2 }}
@@ -437,6 +443,17 @@ const Admin = () => {
                     InputLabelProps={{
                       sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
                     }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={formData.vnc}
+                        disabled={dialogType === 'edit'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vnc: e.target.checked }))}
+                      />
+                    }
+                    label="VNC 환경 사용 (생성 후 변경 불가)"
+                    sx={{ mb: 2, fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                   />
                   <TextField
                     fullWidth
@@ -624,4 +641,4 @@ const Admin = () => {
   );
 };
 
-export default Admin; 
+export default Admin;
