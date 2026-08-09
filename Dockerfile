@@ -2,26 +2,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# 종속성 설치 최적화
 COPY package*.json ./
-RUN npm install --only=production
+RUN npm ci
 
 # 소스 코드 복사 및 빌드
 COPY . .
-
-# 빌드 시 환경변수 주입 (ARG → ENV)
-ARG REACT_APP_API_URL
-ARG REACT_APP_KEYCLOAK_URL
-ARG REACT_APP_REALM
-ARG REACT_APP_CLIENT_ID
-ARG REACT_APP_REDIRECT_URI
-ARG REACT_APP_SCOPE
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-ENV REACT_APP_KEYCLOAK_URL=$REACT_APP_KEYCLOAK_URL
-ENV REACT_APP_REALM=$REACT_APP_REALM
-ENV REACT_APP_CLIENT_ID=$REACT_APP_CLIENT_ID
-ENV REACT_APP_REDIRECT_URI=$REACT_APP_REDIRECT_URI
-ENV REACT_APP_SCOPE=$REACT_APP_SCOPE
 
 # 웹 번들링 최적화 옵션 추가
 ENV NODE_ENV=production
@@ -40,6 +25,8 @@ RUN find /app/build -name "*.html" -exec html-minifier-terser --collapse-whitesp
 # 2단계: 프로덕션 단계
 FROM nginx:stable-alpine
 COPY --from=optimize /app/build /usr/share/nginx/html
+COPY docker/runtime-config.template.js /usr/share/nginx/html/runtime-config.template.js
+COPY docker/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
 
 # Nginx 설정 파일 복사
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
@@ -49,7 +36,8 @@ RUN echo 'gzip on; \
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript; \
     gzip_comp_level 6; \
     gzip_min_length 1000; \
-    gzip_proxied any;' > /etc/nginx/conf.d/gzip.conf
+    gzip_proxied any;' > /etc/nginx/conf.d/gzip.conf \
+    && chmod 755 /docker-entrypoint.d/40-runtime-config.sh
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

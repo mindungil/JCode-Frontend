@@ -116,8 +116,6 @@ pipeline {
 
                        --destination=${DOCKER_REGISTRY}/${PROJECT_NAME}/${IMAGE_NAME}:${DEV_TAG} \
 
-                       --destination=${DOCKER_REGISTRY}/${PROJECT_NAME}/${IMAGE_NAME}:latest \
-
                        --cleanup
 
                    """

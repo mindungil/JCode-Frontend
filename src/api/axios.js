@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { requireApiUrl } from '../config/runtimeConfig';
 
 // 토큰 유틸리티 import
 import { 
@@ -10,7 +11,7 @@ import {
 } from '../utils/tokenUtils';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: requireApiUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -91,4 +92,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default api;

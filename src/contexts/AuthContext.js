@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
+import { requireApiUrl } from '../config/runtimeConfig';
 
 const AuthContext = createContext(null);
 
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/oauth2/authorization/keycloak`;
+    window.location.href = `${requireApiUrl()}/oauth2/authorization/keycloak`;
   };
 
   const logout = async () => {
@@ -86,4 +87,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};
