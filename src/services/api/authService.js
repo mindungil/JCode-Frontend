@@ -1,10 +1,11 @@
-import { 
+import {
   apiGet, 
   apiPost, 
   apiDelete
 } from '../apiHelpers';
 import { refreshTokenRequest, saveToken, removeToken, getCurrentToken } from '../../utils/tokenUtils';
 import api from '../../api/axios';
+import { requireApiUrl } from '../../config/runtimeConfig';
 
 /**
  * 인증 관련 API 서비스
@@ -97,7 +98,7 @@ const authService = {
    * 기존 방식 유지 - 백엔드에서 리다이렉트 처리
    */
   loginOAuth: () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/oauth2/authorization/keycloak`;
+    window.location.href = `${requireApiUrl()}/oauth2/authorization/keycloak`;
   },
 
   /**
@@ -123,4 +124,4 @@ const authService = {
 
 };
 
-export default authService; 
+export default authService;

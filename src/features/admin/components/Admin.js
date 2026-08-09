@@ -252,13 +252,16 @@ const Admin = () => {
       const courseName = `${selectedItem.courseName} (${selectedItem.courseCode})`;
       if (dialogType === 'end') {
         await adminService.endCourse(selectedItem.courseId);
-        toast.success(`${courseName} 강의가 종료되었습니다.`);
+        toast.success(`${courseName} 강의 종료를 요청했습니다.`);
       } else if (dialogType === 'archive') {
         await adminService.archiveCourse(selectedItem.courseId);
-        toast.success(`${courseName} 강의가 아카이브되었습니다.`);
+        toast.success(`${courseName} 강의 보관을 요청했습니다.`);
       } else if (dialogType === 'reopen') {
         await adminService.reopenCourse(selectedItem.courseId);
-        toast.success(`${courseName} 강의가 재개설되었습니다.`);
+        toast.success(`${courseName} 강의 재개설을 요청했습니다.`);
+      } else if (dialogType === 'retry') {
+        await adminService.retryCourseInfrastructure(selectedItem.courseId);
+        toast.success(`${courseName} 인프라 작업을 다시 요청했습니다.`);
       }
       fetchCourses();
       handleCloseDialog();
@@ -277,7 +280,7 @@ const Admin = () => {
     if (!openDialog) return null;
 
     // 강의 상태 변경 다이얼로그 (종료/아카이브/재개설)
-    if (['end', 'archive', 'reopen'].includes(dialogType)) {
+    if (['end', 'archive', 'reopen', 'retry'].includes(dialogType)) {
       const statusMessages = {
         end: {
           title: '강의 종료',
@@ -296,6 +299,12 @@ const Admin = () => {
           message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 재개설하시겠습니까?\n\n네임스페이스가 재생성됩니다.`,
           color: 'primary',
           buttonText: '재개설'
+        },
+        retry: {
+          title: '인프라 작업 재시도',
+          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의의 실패한 인프라 작업을 다시 시도하시겠습니까?`,
+          color: 'error',
+          buttonText: '재시도'
         }
       };
       const config = statusMessages[dialogType];
