@@ -209,7 +209,10 @@ const Admin = () => {
       }
       handleCloseDialog();
     } catch (error) {
-      ////console.error('작업 실패:', error);
+      const message = error.response?.data?.message
+        || error.response?.data?.detail
+        || '작업 처리 중 오류가 발생했습니다.';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

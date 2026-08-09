@@ -1,0 +1,32 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --watchAll=false
+        env:
+          CI: "true"
+      - run: npm audit --audit-level=critical
+      - run: npm run build
+        env:
+          CI: "false"
+      - name: Reject hardcoded development API URLs
+        run: |
+          if grep -RInE "https?://(localhost|127\\.0\\.0\\.1)|https?://[^[:space:]]*dev\\." src public; then
+            echo "Hardcoded development URL found in production source"
+            exit 1
+          fi
