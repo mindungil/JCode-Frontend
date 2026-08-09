@@ -12,11 +12,16 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import StopIcon from '@mui/icons-material/Stop';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import ReplayIcon from '@mui/icons-material/Replay';
+import SyncProblemIcon from '@mui/icons-material/SyncProblem';
 import { CELL_STYLE } from '../AdminTable';
 
 const STATUS_CONFIG = {
+  PROVISIONING: { label: '생성 중', color: 'info' },
   ACTIVE: { label: '활성', color: 'success' },
+  TERMINATING: { label: '종료 중', color: 'info' },
   ENDED: { label: '종료', color: 'warning' },
+  ARCHIVING: { label: '보관 중', color: 'info' },
+  ERROR: { label: '처리 오류', color: 'error' },
   ARCHIVED: { label: '보관', color: 'default' }
 };
 
@@ -26,7 +31,7 @@ const CourseTableRow = memo(({
   isDarkMode,
   onOpenDialog
 }) => {
-  const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.ACTIVE;
+  const statusConfig = STATUS_CONFIG[item.status] || { label: item.status || '상태 미상', color: 'default' };
 
   return (
     <TableRow key={item.courseId}>
@@ -128,6 +133,20 @@ const CourseTableRow = memo(({
                 }}
               >
                 <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {item.status === 'ERROR' && (
+            <Tooltip title="인프라 작업 재시도">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenDialog('retry', item);
+                }}
+              >
+                <SyncProblemIcon />
               </IconButton>
             </Tooltip>
           )}

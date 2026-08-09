@@ -209,6 +209,17 @@ const adminService = {
     });
   },
 
+  retryCourseInfrastructure: async (courseId, options = {}) => {
+    if (!courseId) {
+      throw new Error('강의 ID가 필요합니다.');
+    }
+
+    return apiPost(`/api/courses/${courseId}/infrastructure/retry`, {}, {
+      customErrorMessage: '강의 인프라 작업 재시도에 실패했습니다.',
+      ...options
+    });
+  },
+
   /**
    * 강의 키 재발급 (ADMIN, PROFESSOR 전용)
    * GET /api/courses/{courseId}/key
@@ -300,4 +311,4 @@ const adminService = {
   }
 };
 
-export default adminService; 
+export default adminService;

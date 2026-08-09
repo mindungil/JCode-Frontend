@@ -44,6 +44,7 @@ const Admin = () => {
     year: new Date().getFullYear(),
     professor: '',
     clss: '',
+    vnc: false,
     hwCount: 10,
     pracEnabled: false,
     pracCount: 0
@@ -88,6 +89,7 @@ const Admin = () => {
         year: selectedItem.year || new Date().getFullYear(),
         professor: selectedItem.professor || '',
         clss: selectedItem.clss || '',
+        vnc: Boolean(selectedItem.vnc),
         hwCount: selectedItem.hwCount || 10,
         pracEnabled: selectedItem.pracEnabled || false,
         pracCount: selectedItem.pracCount || 0
@@ -102,6 +104,7 @@ const Admin = () => {
         year: new Date().getFullYear(),
         professor: '',
         clss: '',
+        vnc: false,
         hwCount: 10,
         pracEnabled: false,
         pracCount: 0
@@ -133,6 +136,7 @@ const Admin = () => {
       year: new Date().getFullYear(),
       professor: '',
       clss: '',
+      vnc: false,
       hwCount: 10,
       pracEnabled: false,
       pracCount: 0
@@ -141,7 +145,7 @@ const Admin = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const numericFields = ['year', 'clss', 'hwCount', 'pracCount'];
+    const numericFields = ['year', 'term', 'clss', 'hwCount', 'pracCount'];
     let parsed = numericFields.includes(name) ? (parseInt(value) || 0) : value;
     if (name === 'hwCount') parsed = Math.max(10, Math.min(15, parsed));
     if (name === 'pracCount') parsed = Math.max(0, Math.min(10, parsed));
@@ -170,6 +174,7 @@ const Admin = () => {
             year: formData.year,
             professor: formData.professor,
             clss: formData.clss,
+            vnc: formData.vnc,
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
@@ -182,6 +187,7 @@ const Admin = () => {
             year: formData.year,
             professor: formData.professor,
             clss: formData.clss,
+            vnc: formData.vnc,
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
@@ -203,7 +209,10 @@ const Admin = () => {
       }
       handleCloseDialog();
     } catch (error) {
-      ////console.error('작업 실패:', error);
+      const message = error.response?.data?.message
+        || error.response?.data?.detail
+        || '작업 처리 중 오류가 발생했습니다.';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -243,13 +252,16 @@ const Admin = () => {
       const courseName = `${selectedItem.courseName} (${selectedItem.courseCode})`;
       if (dialogType === 'end') {
         await adminService.endCourse(selectedItem.courseId);
-        toast.success(`${courseName} 강의가 종료되었습니다.`);
+        toast.success(`${courseName} 강의 종료를 요청했습니다.`);
       } else if (dialogType === 'archive') {
         await adminService.archiveCourse(selectedItem.courseId);
-        toast.success(`${courseName} 강의가 아카이브되었습니다.`);
+        toast.success(`${courseName} 강의 보관을 요청했습니다.`);
       } else if (dialogType === 'reopen') {
         await adminService.reopenCourse(selectedItem.courseId);
-        toast.success(`${courseName} 강의가 재개설되었습니다.`);
+        toast.success(`${courseName} 강의 재개설을 요청했습니다.`);
+      } else if (dialogType === 'retry') {
+        await adminService.retryCourseInfrastructure(selectedItem.courseId);
+        toast.success(`${courseName} 인프라 작업을 다시 요청했습니다.`);
       }
       fetchCourses();
       handleCloseDialog();
@@ -268,7 +280,7 @@ const Admin = () => {
     if (!openDialog) return null;
 
     // 강의 상태 변경 다이얼로그 (종료/아카이브/재개설)
-    if (['end', 'archive', 'reopen'].includes(dialogType)) {
+    if (['end', 'archive', 'reopen', 'retry'].includes(dialogType)) {
       const statusMessages = {
         end: {
           title: '강의 종료',
@@ -287,6 +299,12 @@ const Admin = () => {
           message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 재개설하시겠습니까?\n\n네임스페이스가 재생성됩니다.`,
           color: 'primary',
           buttonText: '재개설'
+        },
+        retry: {
+          title: '인프라 작업 재시도',
+          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의의 실패한 인프라 작업을 다시 시도하시겠습니까?`,
+          color: 'error',
+          buttonText: '재시도'
         }
       };
       const config = statusMessages[dialogType];
@@ -368,6 +386,7 @@ const Admin = () => {
                     label="수업 코드"
                     value={formData.courseCode}
                     onChange={handleInputChange}
+                    disabled={dialogType === 'edit'}
                     required
                     sx={{ mb: 2 }}
                     InputProps={{
@@ -395,10 +414,8 @@ const Admin = () => {
                         fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif"
                       }}
                     >
-                      <MenuItem value="1">1학기</MenuItem>
-                      <MenuItem value="2">2학기</MenuItem>
-                      <MenuItem value="S">여름학기</MenuItem>
-                      <MenuItem value="W">겨울학기</MenuItem>
+                      <MenuItem value={1}>1학기</MenuItem>
+                      <MenuItem value={2}>2학기</MenuItem>
                     </Select>
                   </FormControl>
                   <TextField
@@ -428,6 +445,7 @@ const Admin = () => {
                     type="number"
                     value={formData.clss}
                     onChange={handleInputChange}
+                    disabled={dialogType === 'edit'}
                     required
                     inputProps={{ min: 1 }}
                     sx={{ mb: 2 }}
@@ -437,6 +455,17 @@ const Admin = () => {
                     InputLabelProps={{
                       sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
                     }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={formData.vnc}
+                        disabled={dialogType === 'edit'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vnc: e.target.checked }))}
+                      />
+                    }
+                    label="VNC 환경 사용 (생성 후 변경 불가)"
+                    sx={{ mb: 2, fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                   />
                   <TextField
                     fullWidth
@@ -624,4 +653,4 @@ const Admin = () => {
   );
 };
 
-export default Admin; 
+export default Admin;
