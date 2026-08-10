@@ -7,7 +7,7 @@ on:
         description: "Deployment environment"
         required: true
         type: choice
-        options: [dev, production]
+        options: [dev]
       digest:
         description: "Digest verified in dev (sha256:...)"
         required: true
