@@ -10,11 +10,11 @@ import {
   TableBody,
   Chip,
   CircularProgress,
-  Paper,
   Stack,
   Fade,
   IconButton,
-  Tooltip
+  Tooltip,
+  Alert
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SortIcon from '@mui/icons-material/Sort';
@@ -156,6 +156,14 @@ const SubmissionDashboard = () => {
           </Box>
         </Stack>
 
+        {data?.watcherStatus !== 'OK' && (
+          <Alert severity={data?.watcherStatus === 'UNAVAILABLE' ? 'error' : 'warning'} sx={{ mb: 2 }}>
+            {data?.watcherStatus === 'UNAVAILABLE'
+              ? 'Watcher에 연결할 수 없어 학생 활동을 판정할 수 없습니다.'
+              : 'Watcher 데이터 일부를 가져오지 못했습니다. 표시된 수치는 불완전할 수 있습니다.'}
+          </Alert>
+        )}
+
         {/* Table */}
         <TableContainer component={GlassPaper} sx={{ borderRadius: 2 }}>
           <Table size="small">
@@ -221,6 +229,14 @@ const SubmissionDashboard = () => {
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                      {student.watcherStatus && student.watcherStatus !== 'OK' && (
+                        <Chip
+                          label={student.watcherStatus === 'UNAVAILABLE' ? 'Watcher 오류' : '일부 데이터 오류'}
+                          size="small"
+                          color={student.watcherStatus === 'UNAVAILABLE' ? 'error' : 'warning'}
+                          sx={{ fontSize: '0.65rem', height: '22px' }}
+                        />
+                      )}
                       {student.flags.length > 0 ? (
                         student.flags.map((flag, idx) => (
                           <Chip

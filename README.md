@@ -101,27 +101,29 @@ npm start
 ### Docker로 실행
 
 ```bash
-# 프로덕션용 이미지 빌드
-docker build -t jcode-frontend:latest .
+# 환경과 무관한 이미지 빌드
+docker build -t jcode-frontend:dev-sha .
 
-# 컨테이너 실행
-docker run -p 80:80 jcode-frontend:latest
+# 실행 시 환경 설정 주입
+docker run -p 80:80 \
+  -e JCODE_API_URL=http://localhost:8080 \
+  jcode-frontend:dev-sha
 ```
 
 ### 환경 변수 설정
 
-`.env.example` 파일을 참고하여 다음 환경 변수를 설정하세요:
+로컬 `npm start`는 `.env.example`의 `REACT_APP_*` 값을 사용합니다. Docker/Kubernetes는 같은 이미지에 다음 `JCODE_*` 값을 실행 시 주입합니다:
 
 ```bash
 # 백엔드 API 서버 URL
-REACT_APP_API_URL=http://localhost:8080
+JCODE_API_URL=http://localhost:8080
 
 # OAuth2 설정 (선택사항)
-REACT_APP_KEYCLOAK_URL=http://localhost:8080/auth
-REACT_APP_CLIENT_ID=your-client-id
-REACT_APP_SCOPE=openid
-REACT_APP_REDIRECT_URI=http://localhost:3000/auth/callback
-REACT_APP_REALM=your-realm
+JCODE_KEYCLOAK_URL=http://localhost:8080/auth
+JCODE_CLIENT_ID=your-client-id
+JCODE_SCOPE=openid
+JCODE_REDIRECT_URI=http://localhost:3000/auth/callback
+JCODE_REALM=your-realm
 ```
 
 ---
@@ -242,5 +244,4 @@ frontend/
 ** 이 프로젝트가 도움이 되셨다면 스타를 눌러주세요! ⭐**
 
 Made with ❤️ by the JCode Community
-
 

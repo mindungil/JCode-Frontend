@@ -564,10 +564,16 @@ const WebIDECourses = () => {
                           size="small"
                           sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                         />
-                        {course.status === 'ENDED' && (
+                        {course.status && course.status !== 'ACTIVE' && (
                           <Chip
-                            label="종료됨"
-                            color="warning"
+                            label={{
+                              PROVISIONING: '생성 중',
+                              TERMINATING: '종료 중',
+                              ENDED: '종료됨',
+                              ARCHIVING: '보관 중',
+                              ERROR: '처리 오류'
+                            }[course.status] || course.status}
+                            color={course.status === 'ERROR' ? 'error' : 'warning'}
                             size="small"
                             variant="outlined"
                             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
@@ -597,7 +603,7 @@ const WebIDECourses = () => {
                       </Typography>
                     </CardContent>
                     <CardActions>
-                      {course.status === 'ENDED' ? (
+                      {course.status !== 'ACTIVE' ? (
                         <Typography
                           variant="body2"
                           color="text.secondary"
@@ -608,7 +614,13 @@ const WebIDECourses = () => {
                             py: 0.5
                           }}
                         >
-                          종료된 강의입니다
+                          {{
+                            PROVISIONING: '강의 환경을 생성하고 있습니다',
+                            TERMINATING: '강의를 종료하고 있습니다',
+                            ENDED: '종료된 강의입니다',
+                            ARCHIVING: '강의를 보관하고 있습니다',
+                            ERROR: '강의 환경 처리 중 오류가 발생했습니다'
+                          }[course.status] || '현재 사용할 수 없는 강의입니다'}
                         </Typography>
                       ) : (
                       <>
@@ -907,4 +919,4 @@ const WebIDECourses = () => {
   );
 };
 
-export default WebIDECourses; 
+export default WebIDECourses;

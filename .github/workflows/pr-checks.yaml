@@ -1,0 +1,41 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --watchAll=false
+        env:
+          CI: "true"
+      - run: npm audit --audit-level=critical
+      - run: npm run build
+        env:
+          CI: "false"
+      - name: Build environment-neutral container
+        run: docker build --tag jcode-frontend:pr .
+      - name: Reject hardcoded development API URLs
+        run: |
+          if grep -RInE "https?://(localhost|127\\.0\\.0\\.1)|https?://[^[:space:]]*dev\\." src public; then
+            echo "Hardcoded development URL found in production source"
+            exit 1
+          fi
+      - name: Reject build-time environment injection
+        run: |
+          if grep -InE 'ARG REACT_APP_|ENV REACT_APP_' Dockerfile \
+            || grep -InE 'VERSION=latest|:[[:space:]]*latest' .github/workflows/jcode-front*.yaml; then
+            echo "Build-time environment injection or mutable image tag found"
+            exit 1
+          fi

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { requireApiUrl } from '../config/runtimeConfig';
 
 /**
  * 토큰 관련 유틸리티 함수들
@@ -27,7 +28,7 @@ export const isTokenExpiringSoon = (token) => {
 export const refreshTokenRequest = async () => {
   try {
     const response = await axios.create({
-      baseURL: process.env.REACT_APP_API_URL,
+      baseURL: requireApiUrl(),
       withCredentials: true
     }).post('/api/auth/refresh', null);
 
@@ -78,4 +79,4 @@ export const isValidToken = (token) => {
   } catch (error) {
     return false;
   }
-}; 
+};
