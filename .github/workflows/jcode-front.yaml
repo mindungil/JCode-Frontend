@@ -22,7 +22,7 @@ jobs:
     environment: ${{ inputs.target }}
     env:
       HARBOR_REGISTRY: harbor.jbnu.ac.kr
-      HARBOR_PROJECT: jsh2256
+      HARBOR_PROJECT: jdevops
       IMAGE_NAME: jcode-front
     steps:
       - name: Validate digest

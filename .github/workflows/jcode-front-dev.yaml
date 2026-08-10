@@ -12,7 +12,7 @@ jobs:
       contents: read
     env:
       HARBOR_REGISTRY: harbor.jbnu.ac.kr
-      HARBOR_PROJECT: jsh2256
+      HARBOR_PROJECT: jdevops
       IMAGE_NAME: jcode-front
     
     steps:
