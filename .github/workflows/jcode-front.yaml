@@ -3,6 +3,11 @@ name: Promote frontend image
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options: [dev, production]
       digest:
         description: "Digest verified in dev (sha256:...)"
         required: true
@@ -14,6 +19,7 @@ permissions:
 jobs:
   promote:
     runs-on: ubuntu-22.04
+    environment: ${{ inputs.target }}
     env:
       HARBOR_REGISTRY: harbor.jbnu.ac.kr
       HARBOR_PROJECT: jsh2256
@@ -42,4 +48,22 @@ jobs:
         run: |
           image="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}@${IMAGE_DIGEST}"
           docker buildx imagetools inspect "$image"
-          echo "Deploy this exact image: $image" >> "$GITHUB_STEP_SUMMARY"
+          echo "Verified image: $image" >> "$GITHUB_STEP_SUMMARY"
+      - uses: azure/setup-kubectl@v4
+      - uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+      - name: Deploy verified image
+        env:
+          IMAGE_DIGEST: ${{ inputs.digest }}
+          KUBE_NAMESPACE: ${{ vars.KUBE_NAMESPACE }}
+          KUBE_DEPLOYMENT: ${{ vars.KUBE_DEPLOYMENT }}
+          KUBE_CONTAINER: ${{ vars.KUBE_CONTAINER }}
+        run: |
+          : "${KUBE_NAMESPACE:?KUBE_NAMESPACE environment variable is required}"
+          : "${KUBE_DEPLOYMENT:?KUBE_DEPLOYMENT environment variable is required}"
+          : "${KUBE_CONTAINER:?KUBE_CONTAINER environment variable is required}"
+          image="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}@${IMAGE_DIGEST}"
+          kubectl set image "deployment/${KUBE_DEPLOYMENT}" "${KUBE_CONTAINER}=${image}" -n "$KUBE_NAMESPACE"
+          kubectl rollout status "deployment/${KUBE_DEPLOYMENT}" -n "$KUBE_NAMESPACE" --timeout=5m
