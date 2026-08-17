@@ -44,7 +44,13 @@ const Admin = () => {
     year: new Date().getFullYear(),
     professor: '',
     clss: '',
-    vnc: false,
+    environmentProfile: 'ALGORITHM',
+    useVnc: false,
+    useJupyter: false,
+    baseImage: '',
+    resourceProfile: 'STANDARD',
+    egressPolicy: 'PACKAGE_PROXY',
+    workspaceScope: 'COURSE',
     hwCount: 10,
     pracEnabled: false,
     pracCount: 0
@@ -89,7 +95,13 @@ const Admin = () => {
         year: selectedItem.year || new Date().getFullYear(),
         professor: selectedItem.professor || '',
         clss: selectedItem.clss || '',
-        vnc: Boolean(selectedItem.vnc),
+        environmentProfile: selectedItem.environmentProfile || (selectedItem.vnc ? 'LAB' : 'ALGORITHM'),
+        useVnc: selectedItem.useVnc ?? Boolean(selectedItem.vnc),
+        useJupyter: selectedItem.useJupyter ?? Boolean(selectedItem.vnc),
+        baseImage: selectedItem.baseImage || '',
+        resourceProfile: selectedItem.resourceProfile || 'STANDARD',
+        egressPolicy: selectedItem.egressPolicy || 'PACKAGE_PROXY',
+        workspaceScope: selectedItem.workspaceScope || 'COURSE',
         hwCount: selectedItem.hwCount || 10,
         pracEnabled: selectedItem.pracEnabled || false,
         pracCount: selectedItem.pracCount || 0
@@ -104,7 +116,13 @@ const Admin = () => {
         year: new Date().getFullYear(),
         professor: '',
         clss: '',
-        vnc: false,
+        environmentProfile: 'ALGORITHM',
+        useVnc: false,
+        useJupyter: false,
+        baseImage: '',
+        resourceProfile: 'STANDARD',
+        egressPolicy: 'PACKAGE_PROXY',
+        workspaceScope: 'COURSE',
         hwCount: 10,
         pracEnabled: false,
         pracCount: 0
@@ -136,7 +154,13 @@ const Admin = () => {
       year: new Date().getFullYear(),
       professor: '',
       clss: '',
-      vnc: false,
+      environmentProfile: 'ALGORITHM',
+      useVnc: false,
+      useJupyter: false,
+      baseImage: '',
+      resourceProfile: 'STANDARD',
+      egressPolicy: 'PACKAGE_PROXY',
+      workspaceScope: 'COURSE',
       hwCount: 10,
       pracEnabled: false,
       pracCount: 0
@@ -165,6 +189,10 @@ const Admin = () => {
           toast.error('모든 필드를 입력해주세요.');
           return;
         }
+        if (formData.environmentProfile === 'CUSTOM' && !formData.baseImage.trim()) {
+          toast.error('사용자 정의 환경은 Harbor 이미지가 필요합니다.');
+          return;
+        }
 
         if (dialogType === 'edit') {
           await adminService.updateCourse(selectedItem.courseId, {
@@ -174,7 +202,13 @@ const Admin = () => {
             year: formData.year,
             professor: formData.professor,
             clss: formData.clss,
-            vnc: formData.vnc,
+            environmentProfile: formData.environmentProfile,
+            useVnc: formData.useVnc,
+            useJupyter: formData.useJupyter,
+            baseImage: formData.baseImage || null,
+            resourceProfile: formData.resourceProfile,
+            egressPolicy: formData.egressPolicy,
+            workspaceScope: formData.workspaceScope,
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
@@ -187,7 +221,13 @@ const Admin = () => {
             year: formData.year,
             professor: formData.professor,
             clss: formData.clss,
-            vnc: formData.vnc,
+            environmentProfile: formData.environmentProfile,
+            useVnc: formData.useVnc,
+            useJupyter: formData.useJupyter,
+            baseImage: formData.baseImage || null,
+            resourceProfile: formData.resourceProfile,
+            egressPolicy: formData.egressPolicy,
+            workspaceScope: formData.workspaceScope,
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
@@ -456,17 +496,73 @@ const Admin = () => {
                       sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
                     }}
                   />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.vnc}
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel id="environment-profile-label">실습 환경</InputLabel>
+                    <Select
+                      labelId="environment-profile-label"
+                      label="실습 환경"
+                      name="environmentProfile"
+                      value={formData.environmentProfile}
+                      disabled={dialogType === 'edit'}
+                      onChange={(event) => {
+                        const profile = event.target.value;
+                        const preset = profile === 'LAB'
+                          ? { useVnc: true, useJupyter: true, resourceProfile: 'STANDARD', egressPolicy: 'PACKAGE_PROXY', workspaceScope: 'COURSE', baseImage: '' }
+                          : profile === 'ALGORITHM'
+                            ? { useVnc: false, useJupyter: false, resourceProfile: 'STANDARD', egressPolicy: 'PACKAGE_PROXY', workspaceScope: 'COURSE', baseImage: '' }
+                            : {};
+                        setFormData(prev => ({ ...prev, environmentProfile: profile, ...preset }));
+                      }}
+                    >
+                      <MenuItem value="ALGORITHM">알고리즘 실습</MenuItem>
+                      <MenuItem value="LAB">그래픽·Jupyter 실습</MenuItem>
+                      <MenuItem value="CUSTOM">사용자 정의</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {formData.environmentProfile === 'CUSTOM' && (
+                    <>
+                      <TextField
+                        fullWidth
+                        name="baseImage"
+                        label="Harbor 이미지 (commit tag 또는 digest)"
+                        value={formData.baseImage}
+                        onChange={handleInputChange}
                         disabled={dialogType === 'edit'}
-                        onChange={(e) => setFormData(prev => ({ ...prev, vnc: e.target.checked }))}
+                        required
+                        sx={{ mb: 2 }}
                       />
-                    }
-                    label="VNC 환경 사용 (생성 후 변경 불가)"
-                    sx={{ mb: 2, fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                  />
+                      <FormControlLabel
+                        control={<Checkbox checked={formData.useVnc} disabled={dialogType === 'edit'} onChange={(e) => setFormData(prev => ({ ...prev, useVnc: e.target.checked }))} />}
+                        label="VNC 사용"
+                      />
+                      <FormControlLabel
+                        control={<Checkbox checked={formData.useJupyter} disabled={dialogType === 'edit'} onChange={(e) => setFormData(prev => ({ ...prev, useJupyter: e.target.checked }))} />}
+                        label="Jupyter 사용"
+                      />
+                      <FormControl fullWidth sx={{ my: 2 }}>
+                        <InputLabel>자원 설정</InputLabel>
+                        <Select name="resourceProfile" label="자원 설정" value={formData.resourceProfile} disabled={dialogType === 'edit'} onChange={handleInputChange}>
+                          <MenuItem value="STANDARD">표준</MenuItem>
+                          <MenuItem value="HIGH_MEMORY">고용량 메모리</MenuItem>
+                          <MenuItem value="GPU">GPU</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <FormControl fullWidth sx={{ mb: 2 }}>
+                        <InputLabel>외부 통신</InputLabel>
+                        <Select name="egressPolicy" label="외부 통신" value={formData.egressPolicy} disabled={dialogType === 'edit'} onChange={handleInputChange}>
+                          <MenuItem value="RESTRICTED">내부 서비스만</MenuItem>
+                          <MenuItem value="PACKAGE_PROXY">패키지 프록시 허용</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <FormControl fullWidth sx={{ mb: 2 }}>
+                        <InputLabel>Workspace 범위</InputLabel>
+                        <Select name="workspaceScope" label="Workspace 범위" value={formData.workspaceScope} disabled={dialogType === 'edit'} onChange={handleInputChange}>
+                          <MenuItem value="COURSE">강의 전체</MenuItem>
+                          <MenuItem value="ASSIGNMENT">과제별</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </>
+                  )}
                   <TextField
                     fullWidth
                     name="hwCount"
@@ -612,7 +708,6 @@ const Admin = () => {
           <CourseManagementTab
             courses={users.courses}
             loading={loading}
-            isDarkMode={isDarkMode}
             onOpenDialog={handleOpenDialog}
             rowsPerPage={10}
           />

@@ -33,8 +33,6 @@ const redirectService = {
         ...(redirectData.assignmentId && { assignmentId: redirectData.assignmentId })
       });
 
-      console.log('[RedirectService] 응답 status:', response.status, 'data:', JSON.stringify(response.data));
-
       // 응답에서 URL 찾기 - 여러 가능한 필드 확인
       const redirectUrl = response.data?.url || 
                          response.data?.redirectUrl || 
@@ -69,4 +67,4 @@ const redirectService = {
   }
 };
 
-export default redirectService; 
+export default redirectService;

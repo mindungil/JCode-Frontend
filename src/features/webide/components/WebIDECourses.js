@@ -35,6 +35,7 @@ import { toast } from 'react-toastify';
 import { useTheme } from '../../../contexts/ThemeContext';
 import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 
 const WebIDECourses = () => {
@@ -131,16 +132,11 @@ const WebIDECourses = () => {
     if (actionLoading) return;
     setActionLoading(true);
     try {
-      // JCode가 없을 수 있으므로 먼저 생성 시도 (이미 있으면 서버에서 무시)
-      try {
-        await jcodeService.createJCode(courseId, {
-          userEmail: user.email,
-          snapshot: isSnapshot
-        });
-      } catch (jcodeErr) {
-        // 이미 존재하거나 생성 실패해도 redirect 시도는 계속 진행
-        console.log('[WebIDE] JCode 생성 스킵:', jcodeErr.message);
-      }
+      await jcodeService.createAndWaitUntilReady(courseId, {
+        userEmail: user.email,
+        snapshot: isSnapshot,
+        ...(assignmentId && { assignmentId })
+      });
 
       const redirectData = await redirectService.redirectToJCode({
         userEmail: user.email,
@@ -157,7 +153,7 @@ const WebIDECourses = () => {
 
     } catch (err) {
       const status = err?.response?.status;
-      const serverMsg = err?.response?.data?.message;
+      const serverMsg = err?.response?.data?.detail || err?.response?.data?.message;
       let userMsg = '서버 오류가 발생했습니다.';
       if (!err.response) {
         userMsg = err.message || '네트워크 연결을 확인해주세요.';
@@ -169,7 +165,6 @@ const WebIDECourses = () => {
         userMsg = serverMsg;
       }
       toast.error(userMsg);
-      console.error(`[WebIDE] ${status || 'JS'}: ${serverMsg || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -179,36 +174,9 @@ const WebIDECourses = () => {
     if (actionLoading) return;
     setActionLoading(true);
     try {
-      const joinedCourse = await userService.joinCourse({
+      await userService.joinCourse({
         courseKey: joinDialog.courseKey
       });
-      
-      // 수업 참가 성공 후 JCode 생성 시도
-      const courseId = joinedCourse.courseId;
-      try {
-        await jcodeService.createJCode(courseId, {
-          userEmail: user.email,
-          snapshot: false
-        });
-        //console.log('강의 참가 후 JCode 생성 성공');
-      } catch (jcodeError) {
-        // JCode 생성 실패 시 콘솔에만 로그 (치명적 오류가 아니므로)
-        //console.warn('강의 참가 후 JCode 생성 실패:', jcodeError.message);
-        // 대부분의 경우 자동으로 JCode가 생성되거나 이미 존재할 수 있음
-      }
-
-      // 수업 참가 성공 후 참가자가 교수님이라면 Snapshot JCode 생성 시도
-      if (user.role === 'PROFESSOR') {
-        try {
-          await jcodeService.createJCode(courseId, {
-            userEmail: user.email,
-            snapshot: true
-          });
-          //console.log('강의 참가 후 JCode 생성 성공');
-        } catch (jcodeError) {
-          // JCode 생성 실패 시 콘솔에만 로그 (치명적 오류가 아니므로)
-        }
-      }
       
       // 수업 목록 새로고침
       const courses = await userService.getMyCourses();
@@ -249,22 +217,7 @@ const WebIDECourses = () => {
 
     setActionLoading(true);
     try {
-      // JCode 삭제 시도
-      try {
-        await userService.deleteMyJCode(withdrawDialog.courseId);
-      } catch (jcodeError) {
-        //console.error('JCode 삭제 중 오류:', jcodeError);
-        // JCode 삭제 실패 시에도 강의 탈퇴는 계속 진행
-      }
-      // Snapshot JCode 삭제 시도
-      try {
-        await userService.deleteMySnapshot(withdrawDialog.courseId);
-      } catch (jcodeError) {
-        //console.error('JCode 삭제 중 오류:', jcodeError);
-        // JCode 삭제 실패 시에도 권한 변경은 계속 진행
-      }
-
-      // 강의 탈퇴 진행
+      // Backend가 접근을 먼저 차단하고 일반·Snapshot JCode를 함께 정리한다.
       await userService.leaveCourse(withdrawDialog.courseId);
       
       // 강의 목록 새로고침
@@ -579,6 +532,20 @@ const WebIDECourses = () => {
                             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                           />
                         )}
+                        {course.membershipStatus && course.membershipStatus !== 'READY' && (
+                          <Chip
+                            label={{
+                              PROVISIONING: 'Workspace 준비 중',
+                              PROVISION_FAILED: 'Workspace 준비 오류',
+                              DELETE_PENDING: '탈퇴 처리 중',
+                              DELETE_FAILED: '탈퇴 처리 오류',
+                              ARCHIVED: '탈퇴 완료'
+                            }[course.membershipStatus] || course.membershipStatus}
+                            color={course.membershipStatus.includes('FAILED') ? 'error' : 'info'}
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
                       <Typography 
                         color="text.secondary" 
@@ -603,7 +570,8 @@ const WebIDECourses = () => {
                       </Typography>
                     </CardContent>
                     <CardActions>
-                      {course.status !== 'ACTIVE' ? (
+                      {course.status !== 'ACTIVE' || course.membershipStatus !== 'READY' ? (
+                        <Box sx={{ width: '100%', textAlign: 'center' }}>
                         <Typography
                           variant="body2"
                           color="text.secondary"
@@ -620,8 +588,27 @@ const WebIDECourses = () => {
                             ENDED: '종료된 강의입니다',
                             ARCHIVING: '강의를 보관하고 있습니다',
                             ERROR: '강의 환경 처리 중 오류가 발생했습니다'
-                          }[course.status] || '현재 사용할 수 없는 강의입니다'}
+                          }[course.status] || (course.membershipError || 'Workspace를 준비하고 있습니다')}
                         </Typography>
+                        {course.membershipStatus?.includes('FAILED') && (
+                          <Button
+                            size="small"
+                            startIcon={<RefreshIcon />}
+                            onClick={async () => {
+                              try {
+                                await userService.retryWorkspace(course.courseId);
+                                const refreshedCourses = await userService.getMyCourses();
+                                setCourses(Array.isArray(refreshedCourses) ? refreshedCourses : []);
+                                toast.success('Workspace 작업 재시도를 요청했습니다.');
+                              } catch (error) {
+                                toast.error(error.response?.data?.detail || error.message);
+                              }
+                            }}
+                          >
+                            다시 시도
+                          </Button>
+                        )}
+                        </Box>
                       ) : (
                       <>
                       <Button
@@ -716,7 +703,11 @@ const WebIDECourses = () => {
                                   variant="outlined"
                                   startIcon={<CodeIcon sx={{ fontSize: '0.8rem' }} />}
                                   onClick={() => handleWebIDEOpen(course.courseId, false, assignment.assignmentId)}
-                                  disabled={actionLoading}
+                                  disabled={
+                                    actionLoading ||
+                                    assignment.lifecycleStatus !== 'ACTIVE' ||
+                                    assignment.scheduleStatus !== 'OPEN'
+                                  }
                                   sx={{
                                     fontSize: '0.7rem',
                                     py: 0.25,
@@ -728,7 +719,7 @@ const WebIDECourses = () => {
                                     flexShrink: 0
                                   }}
                                 >
-                                  IDE 열기
+                                  {assignment.scheduleStatus === 'OPEN' ? 'IDE 열기' : '사용 불가'}
                                 </Button>
                               </Box>
                             ))}

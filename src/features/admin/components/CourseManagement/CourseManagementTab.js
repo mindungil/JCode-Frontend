@@ -6,7 +6,6 @@ import { usePagination, useSearch, useSort } from '../../hooks';
 const CourseManagementTab = ({ 
   courses, 
   loading, 
-  isDarkMode,
   onOpenDialog,
   rowsPerPage = 10
 }) => {
@@ -20,7 +19,7 @@ const CourseManagementTab = ({
     { id: 'term', label: '학기' },
     { id: 'clss', label: '분반' },
     { id: 'status', label: '상태' },
-    { id: 'vnc', label: 'VNC 사용' }
+    { id: 'environmentProfile', label: '실습 환경' }
   ], []);
 
   // 검색 필드 정의
@@ -61,7 +60,6 @@ const CourseManagementTab = ({
       key={item.courseId}
       item={item}
       itemIndex={(page - 1) * currentRowsPerPage + index + 1}
-      isDarkMode={isDarkMode}
       onOpenDialog={onOpenDialog}
     />
   );
@@ -81,7 +79,7 @@ const CourseManagementTab = ({
       data={paginatedData}
       sort={sort}
       searchQuery={searchQuery}
-      searchPlaceholder="수업명, 수업 코드, 담당 교수, VNC 사용여부로 검색"
+      searchPlaceholder="수업명, 수업 코드, 담당 교수, 실습 환경으로 검색"
       paginationInfo={paginationInfo}
       onSort={toggleSort}
       onSearchChange={handleSearch}
@@ -91,4 +89,4 @@ const CourseManagementTab = ({
   );
 };
 
-export default CourseManagementTab; 
+export default CourseManagementTab;

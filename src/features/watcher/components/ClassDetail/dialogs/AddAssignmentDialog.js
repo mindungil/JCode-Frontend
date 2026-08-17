@@ -8,7 +8,13 @@ import {
   Button,
   Grid,
   Box,
-  Typography
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import { FONT_FAMILY } from '../../../../../constants/uiConstants';
 import { GlassPaper } from '../../../../../components/ui';
@@ -28,7 +34,10 @@ const AddAssignmentDialog = ({
     assignmentName: '',
     assignmentDescription: '',
     kickoffDate: '',
-    deadlineDate: ''
+    deadlineDate: '',
+    archiveRetentionDays: 90,
+    starterOverwritePolicy: 'PRESERVE_EXISTING',
+    deployStarterNow: true
   });
 
   // 과제명 중복 체크
@@ -44,7 +53,10 @@ const AddAssignmentDialog = ({
       assignmentName: '',
       assignmentDescription: '',
       kickoffDate: '',
-      deadlineDate: ''
+      deadlineDate: '',
+      archiveRetentionDays: 90,
+      starterOverwritePolicy: 'PRESERVE_EXISTING',
+      deployStarterNow: true
     });
     setStarterFile(null);
   };
@@ -114,7 +126,7 @@ const AddAssignmentDialog = ({
             gap: 1
           }}>
             <Box component="span" sx={{ fontWeight: 'bold' }}>안내:</Box>
-            과제명이 학생 워크스페이스의 디렉토리명으로 사용됩니다.
+            과제 폴더는 변경되지 않는 내부 식별자로 관리되며, 과제명은 나중에 수정할 수 있습니다.
           </Typography>
         </Box>
 
@@ -137,6 +149,37 @@ const AddAssignmentDialog = ({
                   height: '56px'
                 }
               }}
+            />
+          </Grid>
+
+          {starterFile && (
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>재배포 방식</InputLabel>
+                <Select
+                  label="재배포 방식"
+                  value={newAssignment.starterOverwritePolicy}
+                  onChange={(e) => setNewAssignment({ ...newAssignment, starterOverwritePolicy: e.target.value })}
+                >
+                  <MenuItem value="PRESERVE_EXISTING">학생 파일 유지</MenuItem>
+                  <MenuItem value="REPLACE_ALL">과제 폴더 전체 교체 (학생 파일 삭제)</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControlLabel
+                control={<Checkbox checked={newAssignment.deployStarterNow} onChange={(e) => setNewAssignment({ ...newAssignment, deployStarterNow: e.target.checked })} />}
+                label="현재 학생에게 바로 배포"
+              />
+            </Grid>
+          )}
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              type="number"
+              label="보관 기간(일)"
+              value={newAssignment.archiveRetentionDays}
+              inputProps={{ min: 1, max: 3650 }}
+              onChange={(e) => setNewAssignment({ ...newAssignment, archiveRetentionDays: Number(e.target.value) })}
             />
           </Grid>
 

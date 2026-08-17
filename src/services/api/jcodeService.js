@@ -24,7 +24,8 @@ const jcodeService = {
       
       const response = await api.post(`/api/courses/${courseId}/jcodes`, {
         userEmail: jcodeData.userEmail,
-        snapshot: jcodeData.snapshot || false
+        snapshot: jcodeData.snapshot || false,
+        ...(jcodeData.assignmentId && { assignmentId: jcodeData.assignmentId })
       });
 
       //console.log('JCode 생성 성공:', response.data);
@@ -33,6 +34,7 @@ const jcodeService = {
     } catch (error) {
       //console.error('JCode 생성 에러:', error);
       
+      const detail = error.response?.data?.detail || error.response?.data?.message;
       if (error.response?.status === 403) {
         // 403 에러는 이미 JCode가 존재하거나 권한 없음을 의미할 수 있음
         //console.warn('JCode 생성 실패 (이미 존재하거나 권한 없음):', error.response?.data);
@@ -41,8 +43,35 @@ const jcodeService = {
         throw new Error('해당 강의를 찾을 수 없습니다.');
       }
       
-      throw new Error(`JCode 생성에 실패했습니다: ${error.message}`);
+      const wrapped = new Error(detail || `JCode 생성에 실패했습니다: ${error.message}`);
+      wrapped.response = error.response;
+      throw wrapped;
     }
+  },
+
+  createAndWaitUntilReady: async (courseId, jcodeData, { timeoutMs = 90000, intervalMs = 1500 } = {}) => {
+    const deadline = Date.now() + timeoutMs;
+    let lastError;
+    while (Date.now() < deadline) {
+      try {
+        const jcode = await jcodeService.createJCode(courseId, jcodeData);
+        if (jcode.status === 'READY' && jcode.jcodeUrl) return jcode;
+        if (jcode.status === 'PROVISION_FAILED' || jcode.status === 'DELETE_FAILED') {
+          await api.post(`/api/courses/${courseId}/jcodes/retry`, {
+            userEmail: jcodeData.userEmail,
+            snapshot: jcodeData.snapshot || false,
+            ...(jcodeData.assignmentId && { assignmentId: jcodeData.assignmentId })
+          });
+        } else if (jcode.lastError) {
+          throw new Error(jcode.lastError || 'JCode 준비 작업이 실패했습니다.');
+        }
+      } catch (error) {
+        lastError = error;
+        if (![409, 502, 503].includes(error.response?.status)) throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+    throw lastError || new Error('JCode 준비 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.');
   },
 
   /**
@@ -54,7 +83,7 @@ const jcodeService = {
       throw new Error('강의 ID와 JCode 데이터가 필요합니다.');
     }
 
-    const { userEmail, snapshot = false } = jcodeData;
+    const { userEmail, snapshot = false, assignmentId } = jcodeData;
     if (!userEmail) {
       throw new Error('사용자 이메일이 필요합니다.');
     }
@@ -63,7 +92,7 @@ const jcodeService = {
       //console.log('JCode 삭제 요청:', { courseId });
       
       const response = await api.delete(`/api/courses/${courseId}/jcodes`, {
-        data: { userEmail, snapshot },
+        data: { userEmail, snapshot, ...(assignmentId && { assignmentId }) },
         headers: { 'Content-Type': 'application/json' }
       });
 
@@ -84,4 +113,4 @@ const jcodeService = {
   }
 };
 
-export default jcodeService; 
+export default jcodeService;
