@@ -12,7 +12,7 @@ import { useTheme } from '../../../../contexts/ThemeContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
-import { jcodeService } from '../../../../services/api';
+import { assignmentService, jcodeService } from '../../../../services/api';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import { useCourseData } from '../../hooks';
 import ClassHeader from './ClassHeader';
@@ -193,6 +193,8 @@ const ClassDetail = () => {
   const finalError = courseError || error;
 
   const handleAddAssignment = async (assignmentData, starterFile = null) => {
+    let createdAssignmentId = null;
+    let starterUploadCompleted = false;
     try {
       const response = await api.post(`/api/courses/${course.courseId}/assignments`, {
         assignmentName: assignmentData.assignmentName,
@@ -201,24 +203,40 @@ const ClassDetail = () => {
         kickoffDate: assignmentData.kickoffDate,
         deadlineDate: assignmentData.deadlineDate
       });
+      createdAssignmentId = response.data?.assignmentId || null;
 
       // 스타터 코드 업로드 (선택)
-      if (starterFile && response.data?.assignmentId) {
-        const formData = new FormData();
-        formData.append('file', starterFile);
-        await api.post(
-          `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code?overwritePolicy=${assignmentData.starterOverwritePolicy}&deployNow=${assignmentData.deployStarterNow}`,
-          formData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
+      if (starterFile && createdAssignmentId) {
+        await assignmentService.uploadStarterWhenActive(
+          course.courseId,
+          createdAssignmentId,
+          starterFile,
+          assignmentData.starterOverwritePolicy,
+          assignmentData.deployStarterNow
         );
+        starterUploadCompleted = true;
       }
 
       const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
       setAssignments(assignmentsResponse.data);
     } catch (error) {
-      const message = error.response?.data?.detail || error.response?.data?.message || '과제 추가에 실패했습니다.';
+      const detail = error.response?.data?.detail || error.response?.data?.message || error.message;
+      const message = createdAssignmentId
+        ? (starterFile && !starterUploadCompleted
+          ? `과제는 생성됐지만 스타터 코드를 올리지 못했습니다: ${detail}`
+          : `과제는 생성됐지만 목록을 새로고침하지 못했습니다: ${detail}`)
+        : (detail || '과제 추가에 실패했습니다.');
+      if (createdAssignmentId) {
+        try {
+          const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
+          setAssignments(assignmentsResponse.data);
+        } catch {
+          // 원본 생성·업로드 오류를 사용자에게 유지한다.
+        }
+      }
       setError(message);
       toast.error(message);
+      error.assignmentCreated = Boolean(createdAssignmentId);
       throw error;
     }
   };
