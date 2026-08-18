@@ -12,7 +12,7 @@ import { useTheme } from '../../../../contexts/ThemeContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
-import { jcodeService } from '../../../../services/api';
+import { assignmentService, jcodeService } from '../../../../services/api';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import { useCourseData } from '../../hooks';
 import ClassHeader from './ClassHeader';
@@ -24,6 +24,8 @@ import EditAssignmentDialog from './dialogs/EditAssignmentDialog';
 import DeleteAssignmentDialog from './dialogs/DeleteAssignmentDialog';
 import PromoteStudentDialog from './dialogs/PromoteStudentDialog';
 import WithdrawUserDialog from './dialogs/WithdrawUserDialog';
+import ReopenAssignmentDialog from './dialogs/ReopenAssignmentDialog';
+import StarterCodeDialog from './dialogs/StarterCodeDialog';
 
 const ClassDetail = () => {
   const { user } = useAuth();
@@ -136,6 +138,8 @@ const ClassDetail = () => {
   const [editingAssignment, setEditingAssignment] = useState(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deletingAssignment, setDeletingAssignment] = useState(null);
+  const [reopeningAssignment, setReopeningAssignment] = useState(null);
+  const [starterAssignment, setStarterAssignment] = useState(null);
   const [promotingStudent, setPromotingStudent] = useState(null);
   const [openPromoteDialog, setOpenPromoteDialog] = useState(false);
   const { isDarkMode } = useTheme();
@@ -189,88 +193,62 @@ const ClassDetail = () => {
   const finalError = courseError || error;
 
   const handleAddAssignment = async (assignmentData, starterFile = null) => {
+    let createdAssignmentId = null;
+    let starterUploadCompleted = false;
     try {
-      // 사용자 입력 시간을 Date 객체로 변환
-      const kickoffDateInput = new Date(assignmentData.kickoffDate);
-      const deadlineDateInput = new Date(assignmentData.deadlineDate);
-
-      const kickoffDateISO = new Date(
-        Date.UTC(
-          kickoffDateInput.getFullYear(),
-          kickoffDateInput.getMonth(),
-          kickoffDateInput.getDate(),
-          kickoffDateInput.getHours(),
-          kickoffDateInput.getMinutes()
-        )
-      ).toISOString();
-
-      const deadlineDateISO = new Date(
-        Date.UTC(
-          deadlineDateInput.getFullYear(),
-          deadlineDateInput.getMonth(),
-          deadlineDateInput.getDate(),
-          deadlineDateInput.getHours(),
-          deadlineDateInput.getMinutes()
-        )
-      ).toISOString();
-
       const response = await api.post(`/api/courses/${course.courseId}/assignments`, {
-        ...assignmentData,
-        kickoffDate: kickoffDateISO,
-        deadlineDate: deadlineDateISO
+        assignmentName: assignmentData.assignmentName,
+        assignmentDescription: assignmentData.assignmentDescription,
+        archiveRetentionDays: assignmentData.archiveRetentionDays,
+        kickoffDate: assignmentData.kickoffDate,
+        deadlineDate: assignmentData.deadlineDate
       });
+      createdAssignmentId = response.data?.assignmentId || null;
 
       // 스타터 코드 업로드 (선택)
-      if (starterFile && response.data?.assignmentId) {
-        const formData = new FormData();
-        formData.append('file', starterFile);
-        await api.post(
-          `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code`,
-          formData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
+      if (starterFile && createdAssignmentId) {
+        await assignmentService.uploadStarterWhenActive(
+          course.courseId,
+          createdAssignmentId,
+          starterFile,
+          assignmentData.starterOverwritePolicy,
+          assignmentData.deployStarterNow
         );
+        starterUploadCompleted = true;
       }
 
       const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
       setAssignments(assignmentsResponse.data);
     } catch (error) {
-      setError('과제 추가에 실패했습니다.');
+      const detail = error.response?.data?.detail || error.response?.data?.message || error.message;
+      const message = createdAssignmentId
+        ? (starterFile && !starterUploadCompleted
+          ? `과제는 생성됐지만 스타터 코드를 올리지 못했습니다: ${detail}`
+          : `과제는 생성됐지만 목록을 새로고침하지 못했습니다: ${detail}`)
+        : (detail || '과제 추가에 실패했습니다.');
+      if (createdAssignmentId) {
+        try {
+          const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
+          setAssignments(assignmentsResponse.data);
+        } catch {
+          // 원본 생성·업로드 오류를 사용자에게 유지한다.
+        }
+      }
+      setError(message);
+      toast.error(message);
+      error.assignmentCreated = Boolean(createdAssignmentId);
       throw error;
     }
   };
 
   const handleEditAssignment = async (assignmentData) => {
     try {
-      // 사용자 입력 시간을 Date 객체로 변환
-      const kickoffDateInput = new Date(assignmentData.kickoffDate);
-      const deadlineDateInput = new Date(assignmentData.deadlineDate);
-      
-      // 사용자가 입력한 시간을 그대로 ISO 문자열로 만들기
-      const kickoffDateISO = new Date(
-        Date.UTC(
-          kickoffDateInput.getFullYear(),
-          kickoffDateInput.getMonth(),
-          kickoffDateInput.getDate(),
-          kickoffDateInput.getHours(),
-          kickoffDateInput.getMinutes()
-        )
-      ).toISOString();
-      
-      const deadlineDateISO = new Date(
-        Date.UTC(
-          deadlineDateInput.getFullYear(),
-          deadlineDateInput.getMonth(),
-          deadlineDateInput.getDate(),
-          deadlineDateInput.getHours(),
-          deadlineDateInput.getMinutes()
-        )
-      ).toISOString();
-      
       await api.put(`/api/courses/${courseId}/assignments/${assignmentData.assignmentId}`, {
         assignmentName: assignmentData.assignmentName,
         assignmentDescription: assignmentData.assignmentDescription,
-        kickoffDate: kickoffDateISO,
-        deadlineDate: deadlineDateISO
+        archiveRetentionDays: assignmentData.archiveRetentionDays || 90,
+        kickoffDate: assignmentData.kickoffDate,
+        deadlineDate: assignmentData.deadlineDate
       });
 
       const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
@@ -278,22 +256,62 @@ const ClassDetail = () => {
       
       toast.success('과제가 성공적으로 수정되었습니다.');
     } catch (error) {
-      toast.error('과제 수정에 실패했습니다. 다시 시도해주세요.');
+      toast.error(error.response?.data?.detail || '과제 수정에 실패했습니다. 다시 시도해주세요.');
       throw error; // EditAssignmentDialog에서 오류를 처리할 수 있도록 다시 throw
     }
   };
 
   const handleDeleteAssignment = async (assignment) => {
     try {
-      await api.delete(`/api/courses/${courseId}/assignments/${assignment.assignmentId}`);
+      await api.delete(`/api/courses/${courseId}/assignments/${assignment.assignmentId}?retentionDays=${assignment.archiveRetentionDays || 90}`);
       
       const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
       setAssignments(assignmentsResponse.data);
       
-      toast.success('과제가 성공적으로 삭제되었습니다.');
+      toast.success('과제 보관을 요청했습니다.');
     } catch (error) {
-      toast.error('과제 삭제에 실패했습니다. 다시 시도해주세요.');
+      toast.error(error.response?.data?.detail || '과제 보관 요청에 실패했습니다. 다시 시도해주세요.');
       throw error; // DeleteAssignmentDialog에서 오류를 처리할 수 있도록 다시 throw
+    }
+  };
+
+  const handleRetryAssignment = async (assignment) => {
+    try {
+      await api.post(`/api/courses/${courseId}/assignments/${assignment.assignmentId}/retry`);
+      toast.success('과제 작업 재시도를 요청했습니다.');
+      const response = await api.get(`/api/courses/${courseId}/assignments`);
+      setAssignments(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || '재시도 요청에 실패했습니다.');
+    }
+  };
+
+  const handleUploadStarter = async (assignment, file, overwritePolicy, deployNow) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      await api.post(
+        `/api/courses/${courseId}/assignments/${assignment.assignmentId}/starter-code?overwritePolicy=${overwritePolicy}&deployNow=${deployNow}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      toast.success('새 스타터 버전을 저장했습니다.');
+      const response = await api.get(`/api/courses/${courseId}/assignments`);
+      setAssignments(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || '스타터 코드 저장에 실패했습니다.');
+      throw error;
+    }
+  };
+
+  const handleReopenAssignment = async (assignment, deadlineDate) => {
+    try {
+      await api.post(`/api/courses/${courseId}/assignments/${assignment.assignmentId}/reopen`, { deadlineDate });
+      toast.success('과제를 다시 열었습니다.');
+      const response = await api.get(`/api/courses/${courseId}/assignments`);
+      setAssignments(response.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || '과제 재개방에 실패했습니다.');
     }
   };
 
@@ -457,6 +475,9 @@ const ClassDetail = () => {
                 setDeletingAssignment(assignment);
                 setOpenDeleteDialog(true);
               }}
+              onRetryAssignment={handleRetryAssignment}
+              onReopenAssignment={setReopeningAssignment}
+              onUploadStarter={setStarterAssignment}
               userRole={userRole}
               courseId={courseId}
             />
@@ -490,6 +511,20 @@ const ClassDetail = () => {
             assignment={deletingAssignment}
           />
 
+          <ReopenAssignmentDialog
+            open={Boolean(reopeningAssignment)}
+            assignment={reopeningAssignment}
+            onClose={() => setReopeningAssignment(null)}
+            onReopen={handleReopenAssignment}
+          />
+
+          <StarterCodeDialog
+            open={Boolean(starterAssignment)}
+            assignment={starterAssignment}
+            onClose={() => setStarterAssignment(null)}
+            onUpload={handleUploadStarter}
+          />
+
           <PromoteStudentDialog
             open={openPromoteDialog}
             onClose={() => {
@@ -517,4 +552,4 @@ const ClassDetail = () => {
   );
 };
 
-export default ClassDetail; 
+export default ClassDetail;

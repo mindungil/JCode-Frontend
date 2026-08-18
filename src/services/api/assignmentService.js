@@ -1,6 +1,7 @@
 import { 
   apiGet
 } from '../apiHelpers';
+import api from '../../api/axios';
 
 /**
  * 과제 관련 API 서비스 (조회 전용)
@@ -48,6 +49,45 @@ const assignmentService = {
   },
 
   /**
+   * 새 과제의 Workspace 준비가 끝날 때까지 기다립니다.
+   */
+  waitUntilActive: async (courseId, assignmentId, { timeoutMs = 90000, intervalMs = 1500 } = {}) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const assignment = await assignmentService.findAssignmentInCourse(courseId, assignmentId, {
+        showToast: false
+      });
+      if (assignment.lifecycleStatus === 'ACTIVE') return assignment;
+      if (assignment.lifecycleStatus === 'PROVISION_FAILED') {
+        throw new Error(assignment.lastError || '과제 Workspace 준비에 실패했습니다.');
+      }
+      if (['DELETING', 'ARCHIVED'].includes(assignment.lifecycleStatus)) {
+        throw new Error('삭제 중이거나 보관된 과제에는 스타터 코드를 올릴 수 없습니다.');
+      }
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+    throw new Error('과제 Workspace 준비 시간이 초과됐습니다. 과제는 생성됐으며 상태를 확인한 뒤 스타터 코드를 다시 올려주세요.');
+  },
+
+  uploadStarterWhenActive: async (
+    courseId,
+    assignmentId,
+    file,
+    overwritePolicy,
+    deployNow,
+    waitOptions
+  ) => {
+    await assignmentService.waitUntilActive(courseId, assignmentId, waitOptions);
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(
+      `/api/courses/${courseId}/assignments/${assignmentId}/starter-code?overwritePolicy=${overwritePolicy}&deployNow=${deployNow}`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
+
+  /**
    * 과제 상태 확인 (마감일 기준)
    */
   getAssignmentStatus: (assignment) => {
@@ -92,4 +132,4 @@ const assignmentService = {
   }
 };
 
-export default assignmentService; 
+export default assignmentService;

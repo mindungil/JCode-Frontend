@@ -72,6 +72,16 @@ export const useAdminData = () => {
             professor: course.professor || '-',
             clss: course.clss || '-',
             vnc: course.vnc,
+            environmentProfile: course.environmentProfile,
+            useVnc: course.useVnc,
+            useJupyter: course.useJupyter,
+            baseImage: course.baseImage,
+            resourceProfile: course.resourceProfile,
+            egressPolicy: course.egressPolicy,
+            workspaceScope: course.workspaceScope,
+            hwCount: course.hwCount,
+            pracEnabled: course.pracEnabled,
+            pracCount: course.pracCount,
             status: course.status || 'ACTIVE',
             endedAt: course.endedAt
           }))
@@ -108,4 +118,4 @@ export const useAdminData = () => {
     fetchCourses,
     handleRoleChange
   };
-}; 
+};

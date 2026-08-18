@@ -87,6 +87,14 @@ const userService = {
     });
   },
 
+  retryWorkspace: async (courseId, options = {}) => {
+    if (!courseId) throw new Error('강의 ID가 필요합니다.');
+    return apiPost(`/api/users/me/courses/${courseId}/workspace/retry`, {}, {
+      customErrorMessage: 'Workspace 작업 재시도에 실패했습니다.',
+      ...options
+    });
+  },
+
   // ===========================================
   // 2.3 내 강의 상세 정보
   // ===========================================
@@ -186,4 +194,4 @@ const userService = {
   }
 };
 
-export default userService; 
+export default userService;

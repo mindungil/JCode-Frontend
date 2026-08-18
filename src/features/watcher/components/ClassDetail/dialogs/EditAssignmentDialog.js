@@ -110,7 +110,7 @@ const EditAssignmentDialog = ({
               fontSize: '0.875rem',
               color: 'text.secondary'
             }}>
-              디렉토리명: <strong>{editingAssignment.dirName}</strong> (변경 불가)
+              작업 폴더 식별자: <strong>{editingAssignment.dirName}</strong> (변경 불가)
             </Typography>
           </Box>
         )}

@@ -8,7 +8,6 @@ import {
   Tooltip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import StopIcon from '@mui/icons-material/Stop';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import ReplayIcon from '@mui/icons-material/Replay';
@@ -25,10 +24,15 @@ const STATUS_CONFIG = {
   ARCHIVED: { label: '보관', color: 'default' }
 };
 
+const PROFILE_LABEL = {
+  ALGORITHM: '알고리즘',
+  LAB: '그래픽·Jupyter',
+  CUSTOM: '사용자 정의'
+};
+
 const CourseTableRow = memo(({
   item,
   itemIndex,
-  isDarkMode,
   onOpenDialog
 }) => {
   const statusConfig = STATUS_CONFIG[item.status] || { label: item.status || '상태 미상', color: 'default' };
@@ -51,20 +55,11 @@ const CourseTableRow = memo(({
         />
       </TableCell>
       <TableCell sx={CELL_STYLE}>
-        <Box
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: item.vnc
-              ? (isDarkMode ? '#50FA7B' : '#1b5e20')
-              : (isDarkMode ? '#FF5555' : '#b71c1c'),
-            fontWeight: 900,
-            fontSize: '1rem'
-          }}
-        >
-          {item.vnc ? '○' : '✕'}
-        </Box>
+        <Chip
+          label={PROFILE_LABEL[item.environmentProfile] || (item.vnc ? PROFILE_LABEL.LAB : PROFILE_LABEL.ALGORITHM)}
+          size="small"
+          variant="outlined"
+        />
       </TableCell>
       <TableCell>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -121,20 +116,6 @@ const CourseTableRow = memo(({
                 </IconButton>
               </Tooltip>
             </>
-          )}
-          {item.status === 'ARCHIVED' && (
-            <Tooltip title="삭제">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenDialog('delete', item);
-                }}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
           )}
           {item.status === 'ERROR' && (
             <Tooltip title="인프라 작업 재시도">
