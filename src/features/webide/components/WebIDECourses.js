@@ -127,8 +127,11 @@ const WebIDECourses = () => {
   }, [fetchCourses]);
 
   useEffect(() => {
-    const transitional = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
-    if (!courses.some(course => transitional.has(course.status))) return undefined;
+    const courseTransitions = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
+    const membershipTransitions = new Set(['PROVISIONING', 'DELETE_PENDING']);
+    if (!courses.some(course => (
+      courseTransitions.has(course.status) || membershipTransitions.has(course.membershipStatus)
+    ))) return undefined;
     const timer = window.setInterval(() => fetchCourses(false), 3000);
     return () => window.clearInterval(timer);
   }, [courses, fetchCourses]);
@@ -306,9 +309,9 @@ const WebIDECourses = () => {
     }
   };
 
-  // 필터링된 강의 목록 (ARCHIVED 강의는 제외)
+  // 완료된 강의와 탈퇴 처리가 끝난 가입 정보는 목록에서 제외한다.
   const filteredCourses = courses.filter(course => {
-    if (course.status === 'ARCHIVED') return false;
+    if (course.status === 'ARCHIVED' || course.membershipStatus === 'ARCHIVED') return false;
     const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
     const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
     return yearMatch && termMatch;
@@ -597,6 +600,20 @@ const WebIDECourses = () => {
                             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                           />
                         )}
+                        {course.membershipStatus && course.membershipStatus !== 'READY' && (
+                          <Chip
+                            label={{
+                              PROVISIONING: '참여 준비 중',
+                              DELETE_PENDING: '탈퇴 처리 중',
+                              PROVISION_FAILED: '참여 준비 오류',
+                              DELETE_FAILED: '탈퇴 처리 오류'
+                            }[course.membershipStatus] || course.membershipStatus}
+                            color={course.membershipStatus.endsWith('FAILED') ? 'error' : 'warning'}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
+                          />
+                        )}
                       </Box>
                       <Typography 
                         color="text.secondary" 
@@ -621,7 +638,7 @@ const WebIDECourses = () => {
                       </Typography>
                     </CardContent>
                     <CardActions>
-                      {course.status !== 'ACTIVE' ? (
+                      {course.status !== 'ACTIVE' || (course.membershipStatus && course.membershipStatus !== 'READY') ? (
                         <Typography
                           variant="body2"
                           color="text.secondary"
@@ -633,6 +650,11 @@ const WebIDECourses = () => {
                           }}
                         >
                           {{
+                            PROVISIONING: '참여 환경을 준비하고 있습니다',
+                            DELETE_PENDING: '강의 탈퇴를 처리하고 있습니다',
+                            PROVISION_FAILED: '참여 환경을 준비하지 못했습니다',
+                            DELETE_FAILED: '강의 탈퇴 처리에 실패했습니다'
+                          }[course.membershipStatus] || {
                             PROVISIONING: '강의 환경을 생성하고 있습니다',
                             TERMINATING: '강의를 종료하고 있습니다',
                             ENDED: '종료된 강의입니다',
