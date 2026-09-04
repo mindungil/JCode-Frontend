@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { getDefaultRoute } from '../../../routes';
 import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
+import { getErrorMessage } from '../../../services/errorHandler';
 
 function LoginCallback() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ function LoginCallback() {
         navigate(defaultPath, { replace: true });
       } catch (error) {
         //console.error('LoginCallback: 오류 발생', error);
-        toast.error(`로그인 처리 중 오류가 발생했습니다: ${error.message}`);
+        toast.error(getErrorMessage(error, '로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.'));
         navigate('/login', { replace: true });
       }
     };
@@ -65,4 +66,4 @@ function LoginCallback() {
   return <div>로그인 처리중...</div>;
 }
 
-export default LoginCallback; 
+export default LoginCallback;

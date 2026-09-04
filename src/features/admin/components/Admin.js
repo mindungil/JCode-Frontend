@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Container,
   Fade,
@@ -28,6 +28,7 @@ import UserManagementTab from './UserManagement/UserManagementTab';
 import CourseManagementTab from './CourseManagement/CourseManagementTab';
 import { useAdminData } from '../hooks';
 import { GlassPaper } from '../../../components/ui';
+import { getErrorMessage } from '../../../services/errorHandler';
 
 const Admin = () => {
   const [currentTab, setCurrentTab] = useState(0);
@@ -35,6 +36,7 @@ const Admin = () => {
   const [dialogType, setDialogType] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const submissionLock = useRef(false);
   const [formData, setFormData] = useState({
     name: '',
     studentNum: '',
@@ -157,7 +159,8 @@ const Admin = () => {
 
   // 제출 핸들러
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setSubmitting(true);
     try {
       if (currentTab === 2) { // 수업 관리 탭
@@ -178,7 +181,7 @@ const Admin = () => {
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
-          });
+          }, { showToast: false });
         } else if (dialogType === 'add') {
           await adminService.createCourse({
             name: formData.courseName,
@@ -191,9 +194,11 @@ const Admin = () => {
             hwCount: formData.hwCount,
             pracEnabled: formData.pracEnabled,
             pracCount: formData.pracEnabled ? formData.pracCount : 0
-          });
+          }, { showToast: false });
+          toast.info('강의 개설을 요청했습니다. 준비가 끝나면 상태가 자동으로 변경됩니다.');
         }
-        fetchCourses();
+        handleCloseDialog();
+        await fetchCourses();
       } else {
         if (!formData.name || !formData.studentNum) {
           toast.error('모든 필드를 입력해주세요.');
@@ -207,26 +212,43 @@ const Admin = () => {
         }
         fetchUsers();
       }
-      handleCloseDialog();
+      if (currentTab !== 2) handleCloseDialog();
     } catch (error) {
-      const message = error.response?.data?.message
-        || error.response?.data?.detail
-        || '작업 처리 중 오류가 발생했습니다.';
-      toast.error(message);
+      if (currentTab === 2 && dialogType === 'add' && !error.response) {
+        try {
+          const latestCourses = await adminService.getAllCourses({ showToast: false });
+          const accepted = latestCourses.some(course =>
+            course.code?.toLowerCase() === formData.courseCode.trim().toLowerCase()
+            && Number(course.clss) === Number(formData.clss)
+            && course.status !== 'ARCHIVED'
+          );
+          if (accepted) {
+            handleCloseDialog();
+            await fetchCourses();
+            toast.info('강의 개설 요청이 접수되었습니다. 준비 상태가 자동으로 갱신됩니다.');
+            return;
+          }
+        } catch {
+          // Keep the original error when request reconciliation is unavailable.
+        }
+      }
+      toast.error(getErrorMessage(error, '작업 처리 중 오류가 발생했습니다.'));
     } finally {
+      submissionLock.current = false;
       setSubmitting(false);
     }
   };
 
   // 삭제 핸들러
   const handleDelete = async () => {
-    if (submitting) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setSubmitting(true);
     try {
       if (currentTab === 2) {
-        await adminService.deleteCourse(selectedItem.courseId);
-        toast.success(`${selectedItem.courseName} (${selectedItem.courseCode}) 수업이 삭제되었습니다.`);
-        fetchCourses();
+        await adminService.deleteCourse(selectedItem.courseId, { showToast: false });
+        toast.info(`${selectedItem.courseName} (${selectedItem.courseCode}) 강의 생성 취소를 요청했습니다.`);
+        await fetchCourses();
       } else {
         await adminService.deleteUser(selectedItem.id);
         toast.success(`${selectedItem.name} (${selectedItem.email}) 사용자가 삭제되었습니다.`);
@@ -234,40 +256,41 @@ const Admin = () => {
       }
       handleCloseDialog();
     } catch (error) {
-      const errorMessage = error.response?.status === 404 ?
-        (currentTab === 2 ? "존재하지 않는 수업입니다." : "존재하지 않는 사용자입니다.") :
-        error.response?.status === 403 ? "삭제 권한이 없습니다." :
-        (currentTab === 2 ? "수업 삭제 중 오류가 발생했습니다." : "사용자 삭제 중 오류가 발생했습니다.");
-      toast.error(errorMessage);
+      toast.error(getErrorMessage(error, currentTab === 2
+        ? '강의 생성 취소에 실패했습니다.'
+        : '사용자 삭제에 실패했습니다.'));
     } finally {
+      submissionLock.current = false;
       setSubmitting(false);
     }
   };
 
   // 강의 상태 변경 핸들러 (종료/아카이브/재개설)
   const handleCourseStatusChange = async () => {
-    if (submitting) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setSubmitting(true);
     try {
       const courseName = `${selectedItem.courseName} (${selectedItem.courseCode})`;
       if (dialogType === 'end') {
-        await adminService.endCourse(selectedItem.courseId);
+        await adminService.endCourse(selectedItem.courseId, { showToast: false });
         toast.success(`${courseName} 강의 종료를 요청했습니다.`);
       } else if (dialogType === 'archive') {
-        await adminService.archiveCourse(selectedItem.courseId);
+        await adminService.archiveCourse(selectedItem.courseId, { showToast: false });
         toast.success(`${courseName} 강의 보관을 요청했습니다.`);
       } else if (dialogType === 'reopen') {
-        await adminService.reopenCourse(selectedItem.courseId);
+        await adminService.reopenCourse(selectedItem.courseId, { showToast: false });
         toast.success(`${courseName} 강의 재개설을 요청했습니다.`);
       } else if (dialogType === 'retry') {
-        await adminService.retryCourseInfrastructure(selectedItem.courseId);
+        await adminService.retryCourseInfrastructure(selectedItem.courseId, { showToast: false });
         toast.success(`${courseName} 인프라 작업을 다시 요청했습니다.`);
       }
       fetchCourses();
       handleCloseDialog();
     } catch (error) {
-      toast.error(error.message || '강의 상태 변경에 실패했습니다.');
+      toast.error(getErrorMessage(error, '강의 상태 변경에 실패했습니다.'));
     } finally {
+      submissionLock.current = false;
       setSubmitting(false);
     }
   };
@@ -342,7 +365,7 @@ const Admin = () => {
         <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
           {dialogType === 'add' ? `${section.title} 추가` :
            dialogType === 'edit' ? `${section.title} 수정` :
-           `${section.title} 삭제`}
+           currentTab === 2 ? '강의 생성 취소' : `${section.title} 삭제`}
         </DialogTitle>
         <DialogContent>
           {dialogType !== 'delete' ? (
@@ -557,7 +580,7 @@ const Admin = () => {
           ) : (
             <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
               {currentTab === 2 ? 
-                `${selectedItem.courseName} (${selectedItem.courseCode}) 수업을 삭제하시겠습니까?` :
+                `${selectedItem.courseName} (${selectedItem.courseCode}) 강의 생성을 취소하고 생성된 인프라를 정리하시겠습니까?` :
                 `${selectedItem.name} (${selectedItem.email}) 사용자를 삭제하시겠습니까?`}
             </Typography>
           )}
@@ -577,7 +600,7 @@ const Admin = () => {
             sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
           >
             {dialogType === 'add' ? '추가' :
-             dialogType === 'edit' ? '수정' : '삭제'}
+             dialogType === 'edit' ? '수정' : currentTab === 2 ? '생성 취소' : '삭제'}
           </Button>
         </DialogActions>
       </Dialog>

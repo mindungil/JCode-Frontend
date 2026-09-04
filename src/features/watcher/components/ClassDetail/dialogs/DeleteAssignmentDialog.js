@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -26,10 +26,12 @@ const DeleteAssignmentDialog = ({
   };
 
   const [loading, setLoading] = useState(false);
+  const submissionLock = useRef(false);
 
   // 과제 삭제 처리
   const handleDeleteAssignment = async () => {
-    if (loading) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setLoading(true);
     try {
       await onDeleteAssignment(assignment);
@@ -37,6 +39,7 @@ const DeleteAssignmentDialog = ({
     } catch (error) {
       //console.error('과제 삭제 실패:', error);
     } finally {
+      submissionLock.current = false;
       setLoading(false);
     }
   };
@@ -54,14 +57,14 @@ const DeleteAssignmentDialog = ({
         fontSize: '1.25rem',
         py: 3
       }}>
-        과제 삭제 확인
+        과제 보관 확인
       </DialogTitle>
       
       <DialogContent>
         <Typography sx={{ fontFamily: FONT_FAMILY }}>
-          정말로 "{assignment?.assignmentName}" 과제를 삭제하시겠습니까?
+          "{assignment?.assignmentName}" 과제를 보관하시겠습니까?
           <br />
-          이 작업은 되돌릴 수 없습니다.
+          학생 IDE 접근이 종료되고 제출 파일은 보관 정책에 따라 유지됩니다.
         </Typography>
       </DialogContent>
       
@@ -98,11 +101,11 @@ const DeleteAssignmentDialog = ({
             textTransform: 'none'
           }}
         >
-          삭제
+          보관
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default DeleteAssignmentDialog; 
+export default DeleteAssignmentDialog;

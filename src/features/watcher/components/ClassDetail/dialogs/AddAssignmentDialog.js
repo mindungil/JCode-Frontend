@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -23,6 +23,7 @@ const AddAssignmentDialog = ({
   existingAssignments = []
 }) => {
   const [loading, setLoading] = useState(false);
+  const submissionLock = useRef(false);
   const [starterFile, setStarterFile] = useState(null);
   const [newAssignment, setNewAssignment] = useState({
     assignmentName: '',
@@ -57,7 +58,8 @@ const AddAssignmentDialog = ({
 
   // 과제 추가 처리
   const handleAddAssignment = async () => {
-    if (loading) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setLoading(true);
     try {
       await onAddAssignment(newAssignment, starterFile);
@@ -66,6 +68,7 @@ const AddAssignmentDialog = ({
     } catch (error) {
       //console.error('과제 추가 실패:', error);
     } finally {
+      submissionLock.current = false;
       setLoading(false);
     }
   };

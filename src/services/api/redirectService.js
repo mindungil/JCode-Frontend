@@ -19,54 +19,14 @@ const redirectService = {
       throw new Error('사용자 이메일과 강의 ID가 필요합니다.');
     }
 
-    try {
-      // console.log('리다이렉트 요청:', {
-      //   userEmail: redirectData.userEmail,
-      //   courseId: redirectData.courseId,
-      //   snapshot: redirectData.snapshot || false
-      // });
-
-      const response = await api.post('/api/redirect', {
-        userEmail: redirectData.userEmail,
-        courseId: redirectData.courseId,
-        snapshot: redirectData.snapshot || false,
-        ...(redirectData.assignmentId && { assignmentId: redirectData.assignmentId })
-      });
-
-      console.log('[RedirectService] 응답 status:', response.status, 'data:', JSON.stringify(response.data));
-
-      // 응답에서 URL 찾기 - 여러 가능한 필드 확인
-      const redirectUrl = response.data?.url || 
-                         response.data?.redirectUrl || 
-                         response.data?.targetUrl ||
-                         response.request?.responseURL;
-
-      if (redirectUrl) {
-        return { 
-          url: redirectUrl,
-          data: response.data 
-        };
-      }
-
-      // URL이 없으면 응답 전체를 반환하여 디버깅
-      //console.warn('리다이렉트 URL을 찾을 수 없음. 응답 전체:', response);
-      return { 
-        data: response.data,
-        headers: response.headers 
-      };
-
-    } catch (error) {
-      //console.error('리다이렉트 API 에러:', error);
-      
-      if (error.response?.status === 403) {
-        throw new Error('JCode 접근 권한이 없습니다. 강의에 등록되어 있는지 확인해주세요.');
-      } else if (error.response?.status === 404) {
-        throw new Error('해당 강의를 찾을 수 없습니다.');
-      }
-      
-      throw new Error(`JCode 리다이렉트에 실패했습니다: ${error.message}`);
-    }
+    const response = await api.post('/api/redirect', {
+      userEmail: redirectData.userEmail,
+      courseId: redirectData.courseId,
+      snapshot: redirectData.snapshot || false,
+      ...(redirectData.assignmentId && { assignmentId: redirectData.assignmentId })
+    });
+    return { url: response.data?.url, data: response.data };
   }
 };
 
-export default redirectService; 
+export default redirectService;

@@ -11,6 +11,7 @@ export const ERROR_TYPES = {
   FORBIDDEN: 'FORBIDDEN', 
   NOT_FOUND: 'NOT_FOUND',
   VALIDATION: 'VALIDATION_ERROR',
+  CONFLICT: 'CONFLICT',
   SERVER: 'SERVER_ERROR',
   UNKNOWN: 'UNKNOWN_ERROR'
 };
@@ -22,6 +23,7 @@ const DEFAULT_MESSAGES = {
   [ERROR_TYPES.FORBIDDEN]: '접근 권한이 없습니다.',
   [ERROR_TYPES.NOT_FOUND]: '요청한 리소스를 찾을 수 없습니다.',
   [ERROR_TYPES.VALIDATION]: '입력 정보를 확인해주세요.',
+  [ERROR_TYPES.CONFLICT]: '현재 상태와 요청이 충돌합니다. 목록을 새로고침한 뒤 확인해주세요.',
   [ERROR_TYPES.SERVER]: '서버에 오류가 발생했습니다.',
   [ERROR_TYPES.UNKNOWN]: '알 수 없는 오류가 발생했습니다.'
 };
@@ -49,6 +51,8 @@ export const getErrorType = (status) => {
     case 422:
     case 400:
       return ERROR_TYPES.VALIDATION;
+    case 409:
+      return ERROR_TYPES.CONFLICT;
     case 500:
     case 502:
     case 503:
@@ -68,9 +72,18 @@ export const getErrorMessage = (error, fallbackMessage = null) => {
     return SPECIAL_ERROR_MESSAGES[errorMessage];
   }
   
-  // 서버에서 제공한 메시지가 있으면 우선 사용
-  if (error?.response?.data?.message) {
-    return error.response.data.message;
+  // Only the backend's sanitized message contract is user-visible.
+  const responseMessage = error?.response?.data?.message;
+  if (responseMessage) {
+    const requestId = error?.response?.data?.requestId;
+    return requestId && error.response.status >= 500
+      ? `${responseMessage} (문의 코드: ${requestId})`
+      : responseMessage;
+  }
+
+  // Locally-created validation errors are safe. Axios/network internals are not.
+  if (!error?.response && !error?.request && errorMessage) {
+    return errorMessage;
   }
   
   // 에러 타입별 기본 메시지
@@ -163,4 +176,4 @@ export default {
   showErrorToast,
   handleApiResponse,
   handleApiWithLoading
-}; 
+};

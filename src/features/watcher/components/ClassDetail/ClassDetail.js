@@ -14,6 +14,7 @@ import { toast } from 'react-toastify';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
 import { jcodeService } from '../../../../services/api';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
+import { getErrorMessage } from '../../../../services/errorHandler';
 import { useCourseData } from '../../hooks';
 import ClassHeader from './ClassHeader';
 import ClassTabs from './ClassTabs';
@@ -24,6 +25,8 @@ import EditAssignmentDialog from './dialogs/EditAssignmentDialog';
 import DeleteAssignmentDialog from './dialogs/DeleteAssignmentDialog';
 import PromoteStudentDialog from './dialogs/PromoteStudentDialog';
 import WithdrawUserDialog from './dialogs/WithdrawUserDialog';
+
+const wait = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 
 const ClassDetail = () => {
   const { user } = useAuth();
@@ -184,6 +187,35 @@ const ClassDetail = () => {
     fetchData();
   }, [fetchData]);
 
+  const refreshAssignments = useCallback(async () => {
+    const response = await api.get(`/api/courses/${courseId}/assignments`);
+    setAssignments(response.data);
+    return response.data;
+  }, [courseId]);
+
+  const waitForAssignmentReady = async (assignmentId) => {
+    const deadline = Date.now() + 3 * 60 * 1000;
+    while (Date.now() < deadline) {
+      const currentAssignments = await refreshAssignments();
+      const current = currentAssignments.find(item => item.assignmentId === assignmentId);
+      if (current?.lifecycleStatus === 'ACTIVE') return;
+      if (current?.lifecycleStatus === 'PROVISION_FAILED') {
+        throw new Error('과제 환경을 준비하지 못해 스타터 코드를 배포할 수 없습니다.');
+      }
+      await wait(2000);
+    }
+    throw new Error('과제 환경 준비가 지연되어 스타터 코드 업로드를 중단했습니다.');
+  };
+
+  useEffect(() => {
+    const transitional = new Set(['PROVISIONING', 'DELETING']);
+    if (!assignments.some(assignment => transitional.has(assignment.lifecycleStatus))) return undefined;
+    const timer = window.setInterval(() => {
+      refreshAssignments().catch(() => undefined);
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [assignments, refreshAssignments]);
+
   // 통합 로딩 상태
   const isLoading = courseLoading || loading;
   const finalError = courseError || error;
@@ -220,21 +252,31 @@ const ClassDetail = () => {
         deadlineDate: deadlineDateISO
       });
 
+      toast.info('과제 생성을 요청했습니다. 환경 준비 상태가 자동으로 갱신됩니다.');
+      await refreshAssignments();
+
       // 스타터 코드 업로드 (선택)
       if (starterFile && response.data?.assignmentId) {
-        const formData = new FormData();
-        formData.append('file', starterFile);
-        await api.post(
-          `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code`,
-          formData,
-          { headers: { 'Content-Type': 'multipart/form-data' } }
-        );
+        try {
+          if (response.data.lifecycleStatus !== 'ACTIVE') {
+            await waitForAssignmentReady(response.data.assignmentId);
+          }
+          const formData = new FormData();
+          formData.append('file', starterFile);
+          await api.post(
+            `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+          );
+          await refreshAssignments();
+        } catch (starterError) {
+          const reason = getErrorMessage(starterError, '잠시 후 다시 시도해주세요.');
+          toast.warning(`과제는 생성되었지만 스타터 코드를 등록하지 못했습니다. ${reason}`);
+        }
       }
-
-      const assignmentsResponse = await api.get(`/api/courses/${course.courseId}/assignments`);
-      setAssignments(assignmentsResponse.data);
     } catch (error) {
       setError('과제 추가에 실패했습니다.');
+      toast.error(getErrorMessage(error, '과제 생성 요청에 실패했습니다.'));
       throw error;
     }
   };
@@ -286,13 +328,10 @@ const ClassDetail = () => {
   const handleDeleteAssignment = async (assignment) => {
     try {
       await api.delete(`/api/courses/${courseId}/assignments/${assignment.assignmentId}`);
-      
-      const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
-      setAssignments(assignmentsResponse.data);
-      
-      toast.success('과제가 성공적으로 삭제되었습니다.');
+      await refreshAssignments();
+      toast.info('과제 보관을 요청했습니다. 완료되면 목록에서 자동으로 정리됩니다.');
     } catch (error) {
-      toast.error('과제 삭제에 실패했습니다. 다시 시도해주세요.');
+      toast.error(getErrorMessage(error, '과제 보관 요청에 실패했습니다. 다시 시도해주세요.'));
       throw error; // DeleteAssignmentDialog에서 오류를 처리할 수 있도록 다시 throw
     }
   };
@@ -517,4 +556,4 @@ const ClassDetail = () => {
   );
 };
 
-export default ClassDetail; 
+export default ClassDetail;

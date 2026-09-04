@@ -10,7 +10,10 @@ import {
   IconButton,
   Stack,
   Typography,
-  Fade
+  Fade,
+  Chip,
+  CircularProgress,
+  Tooltip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
@@ -32,6 +35,17 @@ const AssignmentsTab = ({
   courseId
 }) => {
   const navigate = useNavigate();
+  const visibleAssignments = assignments.filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED');
+
+  const getStatus = (assignment) => {
+    const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
+    if (lifecycle === 'PROVISIONING') return { label: '환경 준비 중', color: 'info', progress: true };
+    if (lifecycle === 'PROVISION_FAILED') return { label: '준비 오류', color: 'error' };
+    if (lifecycle === 'DELETING') return { label: '보관 중', color: 'info', progress: true };
+    if (assignment.scheduleStatus === 'SCHEDULED') return { label: '시작 전', color: 'default' };
+    if (assignment.scheduleStatus === 'CLOSED') return { label: '마감', color: 'warning' };
+    return { label: '진행 중', color: 'success' };
+  };
 
   // 날짜 형식 변환 함수
   const formatToLocalDateTimeString = (dateString) => {
@@ -86,6 +100,9 @@ const AssignmentsTab = ({
                 <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold', width: '250px' }}>
                   남은 시간
                 </TableCell>
+                <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold', width: '130px' }}>
+                  상태
+                </TableCell>
                 {userRole !== 'STUDENT' && (
                   <TableCell sx={{ fontFamily: FONT_FAMILY, fontWeight: 'bold', width: '100px' }}>
                     작업
@@ -94,7 +111,11 @@ const AssignmentsTab = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {assignments.map((assignment) => (
+              {visibleAssignments.map((assignment) => {
+                const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
+                const status = getStatus(assignment);
+                const canManage = lifecycle === 'ACTIVE';
+                return (
                 <TableRow 
                   key={assignment.assignmentId}
                   sx={{ 
@@ -157,11 +178,26 @@ const AssignmentsTab = ({
                   >
                     <RemainingTime deadline={assignment.deadlineDate} />
                   </TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      color={status.color}
+                      variant="outlined"
+                      label={(
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                          {status.progress && <CircularProgress size={12} />}
+                          {status.label}
+                        </Box>
+                      )}
+                    />
+                  </TableCell>
                   
                   {/* 학생이 아닌 경우에만 작업 셀을 표시 */}
                   {userRole !== 'STUDENT' && (
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        {canManage && <>
+                        <Tooltip title="과제 수정">
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -178,6 +214,8 @@ const AssignmentsTab = ({
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
+                        </Tooltip>
+                        <Tooltip title="과제 보관">
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -194,11 +232,14 @@ const AssignmentsTab = ({
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
+                        </Tooltip>
+                        </>}
                       </Stack>
                     </TableCell>
                   )}
                 </TableRow>
-              ))}
+                );
+              })}
               
               {/* 학생이 아닌 경우에만 과제 추가 행을 표시 */}
               {userRole !== 'STUDENT' && (
@@ -215,7 +256,7 @@ const AssignmentsTab = ({
                   }}
                 >
                   <TableCell 
-                    colSpan={6}
+                    colSpan={7}
                     align="center"
                     sx={{ 
                       border: (theme) => `2px dashed ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
@@ -248,4 +289,4 @@ const AssignmentsTab = ({
   );
 };
 
-export default AssignmentsTab; 
+export default AssignmentsTab;
