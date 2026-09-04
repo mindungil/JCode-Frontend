@@ -3,19 +3,18 @@ import {
   Container, 
   Paper, 
   Typography, 
-  Box,
   Fade
 } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../../../api/axios';
 import { useTheme } from '../../../../contexts/ThemeContext';
-import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
 import { jcodeService } from '../../../../services/api';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import { getErrorMessage } from '../../../../services/errorHandler';
 import { useCourseData } from '../../hooks';
+import { getMemberCourseRole } from '../../utils/coursePermissions';
 import ClassHeader from './ClassHeader';
 import ClassTabs from './ClassTabs';
 import StudentsTab from './StudentsTab';
@@ -29,7 +28,6 @@ import WithdrawUserDialog from './dialogs/WithdrawUserDialog';
 const wait = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 
 const ClassDetail = () => {
-  const { user } = useAuth();
   const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,7 +38,6 @@ const ClassDetail = () => {
     loading: courseLoading,
     error: courseError,
     canViewStudents,
-    canCreateAssignments,
     userRole
   } = useCourseData(courseId);
 
@@ -82,9 +79,8 @@ const ClassDetail = () => {
         'ADMIN': 3
       };
 
-      // 먼저 courseRole로 정렬, 없으면 role로 정렬
-      const aRole = a.courseRole || a.role;
-      const bRole = b.courseRole || b.role;
+      const aRole = getMemberCourseRole(a);
+      const bRole = getMemberCourseRole(b);
 
       if (roleOrder[aRole] !== roleOrder[bRole]) {
         return roleOrder[aRole] - roleOrder[bRole];
@@ -125,15 +121,7 @@ const ClassDetail = () => {
   const [openAssignmentDialog, setOpenAssignmentDialog] = useState(false);
   const [currentTab, setCurrentTab] = useState(() => {
     const params = new URLSearchParams(location.search);
-    const tabFromUrl = params.get('tab');
-    
-    // 순수 학생인 경우 무조건 assignments 탭으로 (수업별 조교는 제외)
-    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId))) {
-      return 'assignments';
-    }
-    
-    // URL에 tab이 없거나 학생이 아닌 경우 students를 기본값으로
-    return tabFromUrl || 'students';
+    return params.get('tab') || 'assignments';
   });
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
@@ -151,10 +139,7 @@ const ClassDetail = () => {
 
   // 탭 변경 핸들러
   const handleTabChange = (event, newValue) => {
-    // 순수 학생인 경우 탭 변경 불가 (수업별 조교는 제외)
-    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId))) {
-      return;
-    }
+    if (newValue === 'students' && !canViewStudents) return;
     
     setCurrentTab(newValue);
     // URL 업데이트
@@ -162,6 +147,15 @@ const ClassDetail = () => {
     params.set('tab', newValue);
     navigate(`${location.pathname}?${params.toString()}`, { replace: true });
   };
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(location.search).get('tab');
+    if (requestedTab === 'students' && !canViewStudents) {
+      setCurrentTab('assignments');
+    } else if (!requestedTab && canViewStudents) {
+      setCurrentTab('students');
+    }
+  }, [canViewStudents, location.search]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -253,26 +247,29 @@ const ClassDetail = () => {
       });
 
       toast.info('과제 생성을 요청했습니다. 환경 준비 상태가 자동으로 갱신됩니다.');
-      await refreshAssignments();
+      // Generator 완료를 기다리지 않고 생성 창을 닫고, 목록 상태는 polling으로 갱신한다.
+      void refreshAssignments();
 
       // 스타터 코드 업로드 (선택)
       if (starterFile && response.data?.assignmentId) {
-        try {
-          if (response.data.lifecycleStatus !== 'ACTIVE') {
-            await waitForAssignmentReady(response.data.assignmentId);
+        void (async () => {
+          try {
+            if (response.data.lifecycleStatus !== 'ACTIVE') {
+              await waitForAssignmentReady(response.data.assignmentId);
+            }
+            const formData = new FormData();
+            formData.append('file', starterFile);
+            await api.post(
+              `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code`,
+              formData,
+              { headers: { 'Content-Type': 'multipart/form-data' } }
+            );
+            await refreshAssignments();
+          } catch (starterError) {
+            const reason = getErrorMessage(starterError, '잠시 후 다시 시도해주세요.');
+            toast.warning(`과제는 생성되었지만 스타터 코드를 등록하지 못했습니다. ${reason}`);
           }
-          const formData = new FormData();
-          formData.append('file', starterFile);
-          await api.post(
-            `/api/courses/${course.courseId}/assignments/${response.data.assignmentId}/starter-code`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } }
-          );
-          await refreshAssignments();
-        } catch (starterError) {
-          const reason = getErrorMessage(starterError, '잠시 후 다시 시도해주세요.');
-          toast.warning(`과제는 생성되었지만 스타터 코드를 등록하지 못했습니다. ${reason}`);
-        }
+        })();
       }
     } catch (error) {
       setError('과제 추가에 실패했습니다.');
@@ -473,7 +470,7 @@ const ClassDetail = () => {
               onPromoteStudent={(student) => {
                 setPromotingStudent({
                   ...student,
-                  newRole: student.role
+                  newRole: getMemberCourseRole(student) || 'STUDENT'
                 });
                 setOpenPromoteDialog(true);
               }}
@@ -537,7 +534,7 @@ const ClassDetail = () => {
             }}
             onPromoteStudent={handlePromoteToTA}
             student={promotingStudent}
-            currentUserRole={user?.role}
+            currentUserRole={userRole}
           />
 
           {/* 사용자 탈퇴 다이얼로그 */}

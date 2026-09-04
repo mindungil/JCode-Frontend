@@ -18,8 +18,6 @@ export const useClassList = () => {
       
       if (user?.role === 'ADMIN') {
         response = await axios.get('/api/courses');
-      } else if (user?.assistantCourses?.length > 0) {
-        response = await axios.get('/api/users/me/assistant/courses');
       } else {
         response = await axios.get('/api/users/me/courses');
       }
@@ -33,6 +31,7 @@ export const useClassList = () => {
           courseYear: course.year,
           courseTerm: course.term,
           courseClss: course.clss,
+          courseRole: 'ADMIN',
           status: course.status,
           canCancelCreation: course.canCancelCreation
         })) : response.data;
@@ -63,8 +62,8 @@ export const useClassList = () => {
 
       const { courseId, courseKey } = createResponse.data;
 
-      // 목록 새로고침
-      await loadClasses(true);
+      // 생성 요청이 수락되면 창을 즉시 닫을 수 있도록 목록 갱신은 백그라운드에서 수행한다.
+      void loadClasses(true);
 
       return { 
         success: true, 
@@ -83,7 +82,7 @@ export const useClassList = () => {
             && course.status !== 'ARCHIVED'
           );
           if (accepted) {
-            await loadClasses(true);
+            void loadClasses(true);
             return {
               success: true,
               courseId: accepted.courseId,
@@ -124,7 +123,7 @@ export const useClassList = () => {
       //console.error('참가 코드 재발급 실패:', err);
       return {
         success: false,
-        error: err.message || '참가 코드 재발급에 실패했습니다.'
+        error: getErrorMessage(err, '참가 코드 재발급에 실패했습니다.')
       };
     }
   }, [loadClasses]);
@@ -142,7 +141,7 @@ export const useClassList = () => {
       //console.error('강의 삭제 실패:', err);
       return { 
         success: false, 
-        error: err.message || '강의 삭제에 실패했습니다.'
+        error: getErrorMessage(err, '강의 삭제에 실패했습니다.')
       };
     }
   }, [loadClasses]);

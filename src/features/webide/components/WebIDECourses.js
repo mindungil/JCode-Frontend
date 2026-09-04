@@ -37,6 +37,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 import { getErrorMessage } from '../../../services/errorHandler';
+import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
 
 const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 const JCODE_READY_TIMEOUT_MS = 3 * 60 * 1000;
@@ -63,9 +64,6 @@ const WebIDECourses = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [courseAssignments, setCourseAssignments] = useState({});
-  // 사용자 역할 확인 (교수, 조교, 관리자)
-  const isAuthorized = user && (user.role === 'PROFESSOR' || user.role === 'ADMIN' || user.assistantCourses?.length > 0);
-
   const handleToggleAssignments = async (courseId) => {
     if (expandedCourse === courseId) {
       setExpandedCourse(null);
@@ -243,19 +241,6 @@ const WebIDECourses = () => {
         // 대부분의 경우 자동으로 JCode가 생성되거나 이미 존재할 수 있음
       }
 
-      // 수업 참가 성공 후 참가자가 교수님이라면 Snapshot JCode 생성 시도
-      if (user.role === 'PROFESSOR') {
-        try {
-          await jcodeService.createJCode(courseId, {
-            userEmail: user.email,
-            snapshot: true
-          });
-          //console.log('강의 참가 후 JCode 생성 성공');
-        } catch (jcodeError) {
-          // JCode 생성 실패 시 콘솔에만 로그 (치명적 오류가 아니므로)
-        }
-      }
-      
       // 수업 목록 새로고침
       const courses = await userService.getMyCourses();
       setCourses(courses);
@@ -704,13 +689,13 @@ const WebIDECourses = () => {
                           minHeight: '28px',
                           borderRadius: '20px',
                           textTransform: 'none',
-                          flex: isAuthorized ? 1 : 'auto'
+                          flex: canViewCourseStudents(course, user) ? 1 : 'auto'
                         }}
                       >
                         과제 목록
                       </Button>
 
-                      {isAuthorized && (
+                      {canViewCourseStudents(course, user) && (
                         <Button
                           fullWidth
                           variant="outlined"

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { redirectToJCode } from '../components/charts/api';
 import { createStringSort } from '../../../utils/sortHelpers';
+import { getMemberCourseRole } from '../utils/coursePermissions';
 
 export const useStudentManagement = (students = [], userRole = null, isDarkMode = false) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,9 +23,7 @@ export const useStudentManagement = (students = [], userRole = null, isDarkMode 
   const filteredAndSortedStudents = useMemo(() => {
     // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = students.filter(student => {
-      // role 확인
-      if (student.role === 'PROFESSOR' || student.role === 'ADMIN' ||
-          student.courseRole === 'PROFESSOR' || student.courseRole === 'ASSISTANT' || student.courseRole === 'ADMIN') {
+      if (['PROFESSOR', 'ASSISTANT', 'ADMIN'].includes(getMemberCourseRole(student))) {
         return false;
       }
       
@@ -126,4 +125,4 @@ export const useStudentManagement = (students = [], userRole = null, isDarkMode 
     clearSearch,
     resetSort
   };
-}; 
+};

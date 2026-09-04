@@ -35,7 +35,7 @@ const PromoteStudentDialog = ({
       if (prev?.userId === student.userId) return prev; // 이미 사용자가 수정 중이면 보존
       return {
         ...student,
-        newRole: student.newRole ?? student.courseRole ?? student.role ?? 'STUDENT',
+        newRole: student.newRole ?? student.courseRole ?? 'STUDENT',
       };
     });
   }, [open, student?.userId]);
@@ -142,4 +142,4 @@ const PromoteStudentDialog = ({
   );
 };
 
-export default PromoteStudentDialog; 
+export default PromoteStudentDialog;

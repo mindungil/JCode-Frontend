@@ -23,6 +23,7 @@ import api from '../../../../api/axios';
 import { useAuth } from '../../../../contexts/AuthContext';
 import CacheManager from '../../../../utils/cache-manager';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
+import { getCourseRole } from '../../utils/coursePermissions';
 
 
 
@@ -342,10 +343,13 @@ const AssignmentMonitoring = () => {
             return null;
           }),
           
-          // 강의 정보 가져오기
-          fetchCourseInfo(courseId).catch(err => {
-            return null;
-          }),
+          // 강의 정보와 이 수업에서의 역할 가져오기
+          (authUser?.role === 'ADMIN'
+            ? fetchCourseInfo(courseId)
+            : api.get('/api/users/me/courses/details').then(response =>
+                response.data.find(item => item.courseId === parseInt(courseId))
+              )
+          ).catch(() => null),
           
           // 모니터링 데이터 가져오기 - 항상 API에서 데이터 요청
           fetchMonitoringData(
@@ -369,7 +373,7 @@ const AssignmentMonitoring = () => {
         
         if (userId) {
           try {
-            if (authUser?.role === 'STUDENT') {
+            if (getCourseRole(courseData, authUser) === 'STUDENT') {
               // 학생인 경우 자신의 정보를 가져옴
               const meResponse = await api.get('/api/users/me');
               studentData = meResponse.data;

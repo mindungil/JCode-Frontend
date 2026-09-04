@@ -30,6 +30,7 @@ import {
 } from '../charts/api';
 import { sortByName, sortByStudentNum, sortByChanges, createStringSort } from '../../../../utils/sortHelpers';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
+import { canViewCourseStudents, getCourseRole, getMemberCourseRole } from '../../utils/coursePermissions';
 
 
 
@@ -64,6 +65,8 @@ const AssignmentDetail = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
+  const courseRole = getCourseRole(course, user);
+  const canViewAllStudents = canViewCourseStudents(course, user);
 
   // 정렬 상태 추가 
   const [sort, setSort] = useState({
@@ -76,163 +79,40 @@ const AssignmentDetail = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        //console.log('데이터 로드 시작', { courseId, assignmentId, userRole: user?.role });
-        
-        // 과제 정보 가져오기
-        if (user?.role === 'ADMIN') {
-          try {
-            const courseData = await fetchCourseInfo(courseId);
-            //console.log('Admin - 강의 정보 로드 성공:', courseData);
-            setCourse(courseData);
-          } catch (courseError) {
-            //console.error('Admin - 강의 정보 로드 실패:', courseError);
-          }
+        const courseData = user?.role === 'ADMIN'
+          ? await fetchCourseInfo(courseId)
+          : (await fetchUserCoursesDetails()).find(item => item.courseId === parseInt(courseId));
+        if (!courseData) throw new Error('접근 가능한 강의를 찾을 수 없습니다.');
 
-          try {
-            const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
-            //console.log('Admin - 과제 정보 로드 성공:', assignmentData);
-            
-            // assignmentData가 배열인지 확인
-            if (Array.isArray(assignmentData)) {
-              const currentAssignment = assignmentData.find(a => a.assignmentId === parseInt(assignmentId));
-              if (!currentAssignment) {
-                //console.error('과제를 찾을 수 없습니다:', { assignmentId, assignmentData });
-                throw new Error('과제를 찾을 수 없습니다.');
-              }
-              setAssignment(currentAssignment);
-            } else {
-              // assignmentData가 배열이 아닌 경우 직접 사용
-              //console.log('과제 정보가 객체로 반환됨, 직접 사용');
-              setAssignment(assignmentData);
-            }
-          } catch (assignmentError) {
-            //console.error('Admin - 과제 정보 로드 실패:', assignmentError);
-          }
+        const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
+        const currentAssignment = Array.isArray(assignmentData)
+          ? assignmentData.find(item => item.assignmentId === parseInt(assignmentId))
+          : assignmentData;
+        if (!currentAssignment) throw new Error('과제를 찾을 수 없습니다.');
 
-          // 여기서 학생 목록을 가져옵니다
-          try {
-            //console.log('Admin - 학생 목록 로드 시작');
-            const studentsData = await fetchStudents(courseId);
-            //console.log('Admin - 학생 목록 로드 성공:', studentsData);
-            setSubmissions(studentsData || []);
-          } catch (studentsError) {
-            //console.error('Admin - 학생 목록 로드 실패:', studentsError);
-            setSubmissions([]);
-          }
-        }
-        else if (user?.role === 'PROFESSOR' || user?.assistantCourses?.includes(parseInt(courseId))) {
-          //console.log('교수/조교 - 사용자 강의 정보 로드 시작');
-          const courseData = await fetchUserCoursesDetails();
-          //console.log('교수/조교 - 사용자 강의 정보 로드 성공:', courseData);
-          const foundCourse = courseData.find(c => c.courseId === parseInt(courseId));
+        setCourse(courseData);
+        setAssignment(currentAssignment);
 
-          if (!foundCourse) {
-            //console.error('강의를 찾을 수 없습니다:', { courseId, courseData });
-            throw new Error('강의를 찾을 수 없습니다.');
-          }
-          setCourse(foundCourse);
-
-          //console.log('교수/조교 - 과제 정보 로드 시작');
-          const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
-          //console.log('교수/조교 - 과제 정보 로드 성공:', assignmentData);
-          
-          // assignmentData가 배열인지 확인
-          if (Array.isArray(assignmentData)) {
-            const currentAssignment = assignmentData.find(a => a.assignmentId === parseInt(assignmentId));
-            if (!currentAssignment) {
-              //console.error('과제를 찾을 수 없습니다:', { assignmentId, assignmentData });
-              throw new Error('과제를 찾을 수 없습니다.');
-            }
-            setAssignment(currentAssignment);
-          } else {
-            // assignmentData가 배열이 아닌 경우 직접 사용
-            //console.log('과제 정보가 객체로 반환됨, 직접 사용');
-            setAssignment(assignmentData);
-          }
-          
-          // 여기서 학생 목록을 가져옵니다
-          //console.log('교수/조교 - 학생 목록 로드 시작');
+        if (canViewCourseStudents(courseData, user)) {
           const studentsData = await fetchStudents(courseId);
-          //console.log('교수/조교 - 학생 목록 로드 성공:', studentsData);
           setSubmissions(studentsData || []);
-        } 
-        else 
-        {
-          //console.log('학생 - 사용자 강의 정보 로드 시작');
-          const courseData = await fetchUserCoursesDetails();
-         // console.log('학생 - 사용자 강의 정보 로드 성공:', courseData);
-          const foundCourse = courseData.find(c => c.courseId === parseInt(courseId));
-
-          if (!foundCourse) {
-            //console.error('강의를 찾을 수 없습니다:', { courseId, courseData });
-            throw new Error('강의를 찾을 수 없습니다.');
-          }
-          setCourse(foundCourse);
-
-          //console.log('학생 - 과제 정보 로드 시작');
-          const assignmentData = await fetchAssignmentInfo(courseId, assignmentId);
-          //console.log('학생 - 과제 정보 로드 성공:', assignmentData);
-          
-          // assignmentData가 배열인지 확인
-          if (Array.isArray(assignmentData)) {
-            const currentAssignment = assignmentData.find(a => a.assignmentId === parseInt(assignmentId));
-            if (!currentAssignment) {
-              //console.error('과제를 찾을 수 없습니다:', { assignmentId, assignmentData });
-              throw new Error('과제를 찾을 수 없습니다.');
-            }
-            setAssignment(currentAssignment);
-          } else {
-            // assignmentData가 배열이 아닌 경우 직접 사용
-            //console.log('과제 정보가 객체로 반환됨, 직접 사용');
-            setAssignment(assignmentData);
-          }
-
+        } else {
           setSubmissions([]);
         }
-          
-        // 초기 날짜 범위 설정
-        //console.log('초기 날짜 범위 설정 시작');
-        try {
-          const assignmentDetails = await fetchAssignmentInfo(courseId, assignmentId);
-          //console.log('날짜 설정용 과제 정보 로드 성공:', assignmentDetails);
-          
-          if (assignmentDetails) {
-            let startDateTime, endDateTime;
-            
-            if (Array.isArray(assignmentDetails)) {
-              // 배열인 경우 해당 과제 찾기
-              const foundAssignment = assignmentDetails.find(a => a.assignmentId === parseInt(assignmentId));
-              if (foundAssignment) {
-                startDateTime = foundAssignment.startDateTime || foundAssignment.kickoffDate;
-                endDateTime = foundAssignment.endDateTime || foundAssignment.deadlineDate;
-              }
-            } else {
-              // 객체인 경우 직접 사용
-              startDateTime = assignmentDetails.startDateTime || assignmentDetails.kickoffDate;
-              endDateTime = assignmentDetails.endDateTime || assignmentDetails.deadlineDate;
-            }
-            
-            if (startDateTime && endDateTime) {
-              const kickoff = new Date(startDateTime);
-              const deadline = new Date(endDateTime);
-              //console.log('설정된 날짜 범위:', { kickoff, deadline });
-              setStartDate(kickoff);
-              setEndDate(deadline);
-              setRangeStartDate(kickoff);
-              setRangeEndDate(deadline);
-            } else {
-              //console.warn('과제의 시작일 또는 마감일이 설정되지 않았습니다');
-            }
-          }
-        } catch (error) {
-          //console.error('날짜 범위 설정 오류:', error);
+
+        const startDateTime = currentAssignment.startDateTime || currentAssignment.kickoffDate;
+        const endDateTime = currentAssignment.endDateTime || currentAssignment.deadlineDate;
+        if (startDateTime && endDateTime) {
+          const kickoff = new Date(startDateTime);
+          const deadline = new Date(endDateTime);
+          setStartDate(kickoff);
+          setEndDate(deadline);
+          setRangeStartDate(kickoff);
+          setRangeEndDate(deadline);
         }
-        
-        setLoading(false);
-        //console.log('데이터 로드 완료');
       } catch (err) {
-        //console.error('데이터 로드 오류:', err);
         setError('데이터를 불러오는데 실패했습니다.');
+      } finally {
         setLoading(false);
       }
     };
@@ -291,12 +171,11 @@ const AssignmentDetail = () => {
         
         // 교수/조교/관리자 필터링
         let filteredData;
-        const isAssistantInCourse = user?.assistantCourses?.includes(parseInt(courseId));
-        if (user?.role === 'STUDENT' && !isAssistantInCourse) {
+        if (courseRole === 'STUDENT') {
           // 순수 학생인 경우 교수/조교/관리자 제외
           filteredData = enhancedData.filter(item => {
             const userInfo = submissions.find(s => String(s.studentNum) === String(item.student_num));
-            if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'PROFESSOR' || userInfo.courseRole === 'ASSISTANT')) {
+            if (userInfo && ['ADMIN', 'PROFESSOR', 'ASSISTANT'].includes(getMemberCourseRole(userInfo))) {
               return false;
             }
             return true;
@@ -305,8 +184,7 @@ const AssignmentDetail = () => {
           // 교수/관리자인 경우 학생만 표시
           filteredData = enhancedData.filter(item => {
             // 역할 정보 확인
-            if (item.role === 'PROFESSOR' || item.role === 'ADMIN' ||
-                item.courseRole === 'PROFESSOR' || item.courseRole === 'ASSISTANT' || item.courseRole === 'ADMIN') {
+            if (['PROFESSOR', 'ASSISTANT', 'ADMIN'].includes(getMemberCourseRole(item))) {
               return false;
             }
             return true;
@@ -339,7 +217,7 @@ const AssignmentDetail = () => {
 
   // 탭 변경 핸들러
   const handleTabChange = async (event, newValue) => {
-    if (user?.role === 'STUDENT' && !user?.assistantCourses?.includes(parseInt(courseId)) && newValue === 1) {
+    if (courseRole === 'STUDENT' && newValue === 1) {
       try {
         const startTime = performance.now();
         //console.log('[성능] 나의 통계 탭 선택 - 처리 시작');
@@ -493,8 +371,7 @@ const AssignmentDetail = () => {
     // 학생만 필터링 (교수/조교/관리자 제외)
     const filtered = submissions.filter(submission => {
       // role 확인
-      if (submission.role === 'PROFESSOR' || submission.role === 'ADMIN' ||
-          submission.courseRole === 'PROFESSOR' || submission.courseRole === 'ASSISTANT' || submission.courseRole === 'ADMIN') {
+      if (['PROFESSOR', 'ASSISTANT', 'ADMIN'].includes(getMemberCourseRole(submission))) {
         return false;
       }
       
@@ -560,7 +437,7 @@ const AssignmentDetail = () => {
 
   // 학생 차트 클릭 핸들러
   const handleStudentChartClick = (studentData) => {
-    if (user?.role === 'STUDENT') return;
+    if (!canViewAllStudents) return;
     
     //console.log('AssignmentDetail에서 받은 학생 데이터:', studentData);
     //console.log('현재 다이얼로그 상태:', { openDialog, selectedStudent });
@@ -653,7 +530,7 @@ const AssignmentDetail = () => {
             assignmentId={assignmentId}
           />
 
-          {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.assistantCourses?.includes(parseInt(courseId))) && (
+          {canViewAllStudents && (
             <Box sx={{ px: 2, pb: 1, display: 'flex', justifyContent: 'flex-end' }}>
               <Button
                 size="small"
@@ -675,13 +552,13 @@ const AssignmentDetail = () => {
             <AssignmentTabs
               tabValue={tabValue}
               onTabChange={handleTabChange}
-              userRole={course?.courseRole || user?.role}
+              userRole={courseRole}
               studentCount={studentCount}
             />
 
             <TabPanel value={tabValue} index={0}>
               <StatisticsTab
-                userRole={course?.courseRole || user?.role}
+                userRole={courseRole}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 chartData={chartData}
@@ -701,7 +578,7 @@ const AssignmentDetail = () => {
               />
             </TabPanel>
             
-            {(user?.role === 'ADMIN' || user?.role === 'PROFESSOR' || user?.assistantCourses?.includes(parseInt(courseId))) && (
+            {canViewAllStudents && (
               <TabPanel value={tabValue} index={1}>
                 <AssignmentStudentsTab 
                   searchQuery={searchQuery}
@@ -731,6 +608,4 @@ const AssignmentDetail = () => {
 };
 
 export default AssignmentDetail;
-
-
 

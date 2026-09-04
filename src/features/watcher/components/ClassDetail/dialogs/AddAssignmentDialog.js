@@ -117,7 +117,7 @@ const AddAssignmentDialog = ({
             gap: 1
           }}>
             <Box component="span" sx={{ fontWeight: 'bold' }}>안내:</Box>
-            과제명이 학생 워크스페이스의 디렉토리명으로 사용됩니다.
+            과제명은 화면에 표시되며, 내부 저장 경로는 변경에 안전한 별도 식별자로 관리됩니다.
           </Typography>
         </Box>
 

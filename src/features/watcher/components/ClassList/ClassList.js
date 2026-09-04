@@ -37,6 +37,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { LoadingSpinner, Button, GlassPaper } from '../../../../components/ui';
 import { useClassList } from '../../hooks';
 import { toast } from 'react-toastify';
+import { canManageCourse } from '../../utils/coursePermissions';
 
 const ClassList = () => {
   const { user } = useAuth();
@@ -403,7 +404,7 @@ const ClassList = () => {
                         }}
                       />
                     </Box>
-                    {user?.role !== 'STUDENT' && (
+                    {canManageCourse(classItem, user) && (
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();

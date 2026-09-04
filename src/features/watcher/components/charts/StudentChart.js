@@ -7,6 +7,7 @@ import api from '../../../../api/axios';
 import { formatBytes } from '../../../../utils/formatters';
 import { sortByName, sortByStudentNum, sortByChanges } from '../../../../utils/sortHelpers';
 import { getChartStyles } from './ChartUtils';
+import { getMemberCourseRole } from '../../utils/coursePermissions';
 
 const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
   const theme = useTheme();
@@ -125,8 +126,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
         
         // 관리자/조교/교수 역할을 확인할 수 있는 정보가 있는 경우 제외
         const userInfo = dataToUse.find(s => String(s.student_num || '') === String(item.student_num || ''));
-        if (userInfo && (userInfo.role === 'ADMIN' || userInfo.role === 'PROFESSOR' ||
-                         userInfo.courseRole === 'ADMIN' || userInfo.courseRole === 'ASSISTANT' || userInfo.courseRole === 'PROFESSOR')) {
+        if (userInfo && ['ADMIN', 'PROFESSOR', 'ASSISTANT'].includes(getMemberCourseRole(userInfo))) {
           return false;
         }
         return true;
@@ -137,8 +137,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
         // 기본 정보가 없는 경우 제외
         if (!submission.student_num) return false;
         
-        return submission.role !== 'PROFESSOR' && submission.role !== 'ADMIN' &&
-          submission.courseRole !== 'PROFESSOR' && submission.courseRole !== 'ASSISTANT' && submission.courseRole !== 'ADMIN';
+        return !['ADMIN', 'PROFESSOR', 'ASSISTANT'].includes(getMemberCourseRole(submission));
       });
     }
     
@@ -225,7 +224,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
         const name = item.name || '';
         const studentNum = item.student_num || '';
         const userId = item.user_id || '';
-        const role = item.role || item.courseRole || '';
+        const role = getMemberCourseRole(item) || '';
         const email = item.email || '';
         
         // 현재 로그인한 사용자와 학번이 같은지 확인 - 수정된 로직
@@ -675,4 +674,4 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
   );
 };
 
-export default StudentChart; 
+export default StudentChart;

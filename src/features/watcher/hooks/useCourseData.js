@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchCourseInfo, fetchUserCoursesDetails } from '../components/charts/api';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getCourseRole } from '../utils/coursePermissions';
 
 export const useCourseData = (courseId) => {
   const { user } = useAuth();
@@ -23,8 +24,8 @@ export const useCourseData = (courseId) => {
       if (user?.role === 'ADMIN') {
         // 관리자는 직접 강의 정보 조회
         courseData = await fetchCourseInfo(courseId);
-      } else if (user?.role === 'PROFESSOR' || user?.role === 'STUDENT') {
-        // 교수/조교/학생은 본인이 속한 강의 목록에서 찾기
+      } else if (user) {
+        // 일반 사용자의 권한은 전역 역할이 아니라 이 강의의 멤버십으로 결정한다.
         const userCoursesData = await fetchUserCoursesDetails();
         courseData = userCoursesData.find(c => c.courseId === parseInt(courseId));
         
@@ -38,7 +39,7 @@ export const useCourseData = (courseId) => {
       setCourse(courseData);
     } catch (err) {
       //console.error('강의 정보 로드 실패:', err);
-      setError(err.message || '강의 정보를 불러오는데 실패했습니다.');
+      setError('강의 정보를 불러오는데 실패했습니다.');
       setCourse(null);
     } finally {
       setLoading(false);
@@ -101,12 +102,7 @@ export const useCourseData = (courseId) => {
   const getUserCourseRole = () => {
     if (!course || !user) return null;
 
-    // course 객체에 role 정보가 있는 경우
-    if (course.role) return course.role;
-    if (course.courseRole) return course.courseRole;
-
-    // 전역 사용자 역할 반환
-    return user.role;
+    return getCourseRole(course, user);
   };
 
   // 권한 확인 함수들
@@ -158,4 +154,4 @@ export const useCourseData = (courseId) => {
     refreshCourse,
     loadCourseData
   };
-}; 
+};
