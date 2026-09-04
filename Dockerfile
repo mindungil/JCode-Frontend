@@ -1,5 +1,5 @@
 # 1단계: 빌드 단계
-FROM node:20-alpine AS build
+FROM docker.io/library/node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
@@ -15,7 +15,7 @@ ENV GENERATE_SOURCEMAP=false
 RUN npm run build
 
 # 중간 단계: 정적 파일 최적화
-FROM node:20-alpine AS optimize
+FROM docker.io/library/node:20-alpine AS optimize
 WORKDIR /app
 COPY --from=build /app/build /app/build
 # 추가 최적화 도구 설치 및 실행
@@ -23,7 +23,7 @@ RUN npm install -g html-minifier-terser
 RUN find /app/build -name "*.html" -exec html-minifier-terser --collapse-whitespace --remove-comments --remove-redundant-attributes --remove-script-type-attributes --remove-tag-whitespace --use-short-doctype {} -o {} \;
 
 # 2단계: 프로덕션 단계
-FROM nginx:stable-alpine
+FROM docker.io/library/nginx:stable-alpine
 COPY --from=optimize /app/build /usr/share/nginx/html
 COPY docker/runtime-config.template.js /usr/share/nginx/html/runtime-config.template.js
 COPY docker/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
