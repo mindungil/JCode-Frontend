@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Container, 
   Paper, 
@@ -36,6 +36,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { LoadingSpinner, Button, GlassPaper } from '../../../../components/ui';
 import { useClassList } from '../../hooks';
+import { toast } from 'react-toastify';
 
 const ClassList = () => {
   const { user } = useAuth();
@@ -74,9 +75,11 @@ const ClassList = () => {
     open: false,
     courseKey: '',
     courseId: null,
+    operation: null,
   });
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const submissionLock = useRef(false);
   const navigate = useNavigate();
 
   // 고유한 연도와 학기 목록 (훅에서 제공)
@@ -104,7 +107,8 @@ const ClassList = () => {
 
   const handleAddClass = async () => {
     if (!validateForm()) return;
-    if (submitting) return;
+    if (submissionLock.current) return;
+    submissionLock.current = true;
     setSubmitting(true);
 
     try {
@@ -123,13 +127,21 @@ const ClassList = () => {
         });
         setFormErrors({ courseClss: '', courseCode: '' });
 
-        setCourseKeyDialog({
-          open: true,
-          courseKey: result.courseKey,
-          courseId: result.courseId
-        });
+        if (result.courseKey) {
+          setCourseKeyDialog({
+            open: true,
+            courseKey: result.courseKey,
+            courseId: result.courseId,
+            operation: 'create'
+          });
+        } else {
+          toast.info('강의 개설 요청이 접수되었습니다. 참가 코드는 수업 목록에서 재발급해주세요.');
+        }
+      } else {
+        toast.error(result.error || '수업 생성 요청에 실패했습니다.');
       }
     } finally {
+      submissionLock.current = false;
       setSubmitting(false);
     }
   };
@@ -153,7 +165,8 @@ const ClassList = () => {
         setCourseKeyDialog({
           open: true,
           courseKey: result.courseKey,
-          courseId: courseId
+          courseId: courseId,
+          operation: 'regenerate'
         });
       }
     } finally {
@@ -333,7 +346,11 @@ const ClassList = () => {
                     }}
                   >
                     <Box 
-                      onClick={() => navigate(`/watcher/class/${classItem.courseId}`)}
+                      onClick={() => {
+                        if (!classItem.status || classItem.status === 'ACTIVE') {
+                          navigate(`/watcher/class/${classItem.courseId}`);
+                        }
+                      }}
                       sx={{ flex: 1 }}
                     >
                       <ListItemText
@@ -348,6 +365,20 @@ const ClassList = () => {
                               color="primary"
                               sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                             />
+                            {classItem.status && classItem.status !== 'ACTIVE' && (
+                              <Chip
+                                label={{
+                                  PROVISIONING: '환경 준비 중',
+                                  TERMINATING: '종료 중',
+                                  ENDED: '종료됨',
+                                  ARCHIVING: '보관 중',
+                                  ERROR: '준비 오류'
+                                }[classItem.status] || classItem.status}
+                                size="small"
+                                color={classItem.status === 'ERROR' ? 'error' : 'warning'}
+                                variant="outlined"
+                              />
+                            )}
                           </Box>
                         }
                         secondary={
@@ -378,7 +409,7 @@ const ClassList = () => {
                           e.stopPropagation();
                           handleRegenerateKey(classItem.courseId);
                         }}
-                        disabled={submitting}
+                        disabled={submitting || (classItem.status && classItem.status !== 'ACTIVE')}
                         startIcon={<RefreshIcon sx={{ fontSize: '1rem' }} />}
                         size="small"
                         variant="outlined"
@@ -642,13 +673,13 @@ const ClassList = () => {
 
           <Dialog
             open={courseKeyDialog.open}
-            onClose={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
+            onClose={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null, operation: null })}
             maxWidth="sm"
             fullWidth
             PaperComponent={GlassPaper}
           >
             <DialogTitle sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
-              {courseKeyDialog.courseId ? '참가 코드 재발급 완료' : '강의 개설 완료'}
+              {courseKeyDialog.operation === 'regenerate' ? '참가 코드 재발급 완료' : '강의 개설 요청 접수'}
             </DialogTitle>
             <DialogContent>
               <Box sx={{ mt: 2 }}>
@@ -727,7 +758,7 @@ const ClassList = () => {
             </DialogContent>
             <DialogActions>
               <Button 
-                onClick={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null })}
+                onClick={() => setCourseKeyDialog({ open: false, courseKey: '', courseId: null, operation: null })}
                 variant="contained"
               >
                 확인
@@ -740,4 +771,4 @@ const ClassList = () => {
   );
 };
 
-export default ClassList; 
+export default ClassList;

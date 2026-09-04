@@ -138,19 +138,44 @@ const WebIDECourses = () => {
 
   const waitForJcodeReady = async (jcodeId) => {
     const deadline = Date.now() + JCODE_READY_TIMEOUT_MS;
+    let consecutiveFailures = 0;
     while (Date.now() < deadline) {
-      const jcodes = await userService.getMyJCodes({ showToast: false });
-      const current = jcodes.find(jcode => jcode.jcodeId === jcodeId);
-      if (current?.status === 'READY') return;
-      if (current?.status === 'PROVISION_FAILED') {
-        throw new Error('JCode 환경을 준비하지 못했습니다. 관리자에게 문의해주세요.');
-      }
-      if (current?.status === 'DELETE_PENDING' || current?.status === 'ARCHIVED') {
-        throw new Error('JCode 환경이 종료되어 열 수 없습니다.');
+      try {
+        const jcodes = await userService.getMyJCodes({ showToast: false });
+        const current = jcodes.find(jcode => String(jcode.jcodeId) === String(jcodeId));
+        consecutiveFailures = 0;
+        if (current?.status === 'READY') return;
+        if (current?.status === 'PROVISION_FAILED') {
+          throw new Error('JCode 환경을 준비하지 못했습니다. 관리자에게 문의해주세요.');
+        }
+        if (current?.status === 'DELETE_PENDING' || current?.status === 'ARCHIVED') {
+          throw new Error('JCode 환경이 종료되어 열 수 없습니다.');
+        }
+      } catch (error) {
+        if (!error.response && error.message?.startsWith('JCode 환경')) throw error;
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= 5) {
+          throw new Error('JCode 준비 상태를 확인할 수 없습니다. 네트워크 연결을 확인해주세요.');
+        }
       }
       await sleep(2000);
     }
     throw new Error('JCode 준비 시간이 길어지고 있습니다. 잠시 후 다시 시도해주세요.');
+  };
+
+  const getJcodeRedirect = async (redirectData) => {
+    let lastError;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await redirectService.redirectToJCode(redirectData);
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        if (status && status !== 409 && status < 500) throw error;
+        if (attempt < 4) await sleep(1500);
+      }
+    }
+    throw lastError;
   };
 
   const handleWebIDEOpen = async (courseId, isSnapshot = false, assignmentId = null) => {
@@ -175,7 +200,7 @@ const WebIDECourses = () => {
         await waitForJcodeReady(jcode.jcodeId);
       }
 
-      const redirectData = await redirectService.redirectToJCode({
+      const redirectData = await getJcodeRedirect({
         userEmail: user.email,
         courseId: courseId,
         snapshot: isSnapshot,

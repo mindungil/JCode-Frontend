@@ -74,8 +74,9 @@ const AssignmentsTab = ({
   };
 
   // 과제 행 클릭 핸들러
-  const handleRowClick = (assignmentId) => {
-    navigate(`/watcher/class/${courseId}/assignment/${assignmentId}`);
+  const handleRowClick = (assignment) => {
+    if (assignment.lifecycleStatus && assignment.lifecycleStatus !== 'ACTIVE') return;
+    navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`);
   };
 
   return (
@@ -119,7 +120,7 @@ const AssignmentsTab = ({
                 <TableRow 
                   key={assignment.assignmentId}
                   sx={{ 
-                    cursor: 'pointer',
+                    cursor: canManage ? 'pointer' : 'default',
                     '&:hover': {
                       backgroundColor: (theme) => 
                         theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
@@ -128,13 +129,13 @@ const AssignmentsTab = ({
                   }}
                 >
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ fontFamily: FONT_FAMILY }}
                   >
                     {assignment.assignmentName}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ 
                       fontFamily: FONT_FAMILY,
                       maxWidth: '300px',
@@ -146,7 +147,7 @@ const AssignmentsTab = ({
                     {assignment.assignmentDescription}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ fontFamily: FONT_FAMILY }}
                   >
                     {new Date(assignment.kickoffDate).toLocaleDateString('ko-KR', {
@@ -158,7 +159,7 @@ const AssignmentsTab = ({
                     })}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ fontFamily: FONT_FAMILY }}
                   >
                     {new Date(assignment.deadlineDate).toLocaleDateString('ko-KR', {
@@ -170,7 +171,7 @@ const AssignmentsTab = ({
                     })}
                   </TableCell>
                   <TableCell 
-                    onClick={() => handleRowClick(assignment.assignmentId)}
+                    onClick={() => handleRowClick(assignment)}
                     sx={{ 
                       width: '250px',
                       textAlign: 'left'

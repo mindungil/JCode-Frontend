@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getErrorMessage } from '../../../services/errorHandler';
 
 export const useClassList = () => {
   const { user } = useAuth();
@@ -9,10 +10,9 @@ export const useClassList = () => {
   const [error, setError] = useState('');
 
   // 강의 목록 로드
-  const loadClasses = useCallback(async () => {
+  const loadClasses = useCallback(async (background = false) => {
     try {
-      setLoading(true);
-      setError('');
+      if (!background) setLoading(true);
       
       let response;
       
@@ -32,20 +32,24 @@ export const useClassList = () => {
           courseProfessor: course.professor,
           courseYear: course.year,
           courseTerm: course.term,
-          courseClss: course.clss
+          courseClss: course.clss,
+          status: course.status,
+          canCancelCreation: course.canCancelCreation
         })) : response.data;
       
       setClasses(formattedData);
+      setError('');
     } catch (err) {
       //console.error('강의 목록 로드 실패:', err);
-      setError('수업 목록을 불러오는데 실패했습니다.');
+      if (!background) setError('수업 목록을 불러오는데 실패했습니다.');
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, [user]);
 
   // 새 강의 추가
   const addClass = useCallback(async (classData) => {
+    const knownCourseIds = new Set(classes.map(course => course.courseId));
     try {
       const createResponse = await axios.post('/api/courses', {
         code: classData.code,
@@ -59,12 +63,8 @@ export const useClassList = () => {
 
       const { courseId, courseKey } = createResponse.data;
 
-      await axios.post('/api/users/me/courses', {
-        courseKey: courseKey
-      });
-
       // 목록 새로고침
-      await loadClasses();
+      await loadClasses(true);
 
       return { 
         success: true, 
@@ -72,13 +72,34 @@ export const useClassList = () => {
         courseKey 
       };
     } catch (err) {
-      //console.error('수업 추가 실패:', err);
+      if (!err.response && user?.role === 'ADMIN') {
+        try {
+          const latest = await axios.get('/api/courses');
+          const accepted = latest.data.find(course =>
+            !knownCourseIds.has(course.courseId)
+            &&
+            course.code?.toLowerCase() === classData.code.trim().toLowerCase()
+            && Number(course.clss) === Number(classData.clss)
+            && course.status !== 'ARCHIVED'
+          );
+          if (accepted) {
+            await loadClasses(true);
+            return {
+              success: true,
+              courseId: accepted.courseId,
+              courseKey: null
+            };
+          }
+        } catch {
+          // 원래 요청 오류를 유지한다.
+        }
+      }
       return { 
         success: false, 
-        error: err.message || '수업 추가에 실패했습니다.'
+        error: getErrorMessage(err, '수업 생성 요청에 실패했습니다.')
       };
     }
-  }, [loadClasses]);
+  }, [classes, loadClasses, user?.role]);
 
   // 참가 코드 재발급
   const regenerateCourseKey = useCallback(async (courseId) => {
@@ -129,6 +150,7 @@ export const useClassList = () => {
   // 강의 목록 필터링 유틸리티
   const filterClasses = useCallback((selectedYear, selectedTerm) => {
     return classes.filter(course => {
+      if (course.status === 'ARCHIVED') return false;
       const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
       const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
       return yearMatch && termMatch;
@@ -181,6 +203,13 @@ export const useClassList = () => {
     }
   }, [user, loadClasses]);
 
+  useEffect(() => {
+    const transitional = new Set(['PROVISIONING', 'TERMINATING', 'ARCHIVING']);
+    if (!classes.some(course => transitional.has(course.status))) return undefined;
+    const timer = window.setInterval(() => loadClasses(true), 3000);
+    return () => window.clearInterval(timer);
+  }, [classes, loadClasses]);
+
   return {
     // 상태
     classes,
@@ -202,4 +231,4 @@ export const useClassList = () => {
     filterClasses,
     validateClassForm
   };
-}; 
+};
