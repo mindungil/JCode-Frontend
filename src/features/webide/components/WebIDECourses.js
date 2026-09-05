@@ -184,8 +184,8 @@ const WebIDECourses = () => {
       return;
     }
     ideWindow.opener = null;
-    ideWindow.document.title = 'JCode 준비 중';
-    ideWindow.document.body.textContent = 'JCode 환경을 준비하고 있습니다...';
+    ideWindow.document.title = 'JCode 실행 환경 생성 중';
+    ideWindow.document.body.textContent = '개인 JCode 실행 환경을 생성하고 있습니다. 준비가 완료되면 자동으로 연결됩니다. 일반적으로 오래 걸리지 않으니 잠시만 기다려 주세요.';
     setActionLoading(true);
     try {
       const jcode = await jcodeService.createJCode(courseId, {
@@ -194,7 +194,7 @@ const WebIDECourses = () => {
         ...(assignmentId && { assignmentId })
       });
       if (jcode.status !== 'READY') {
-        toast.info('JCode 환경을 준비하고 있습니다. 완료되면 자동으로 열립니다.');
+        toast.info('개인 JCode 실행 환경을 생성하고 있습니다. 완료되면 자동으로 연결됩니다.');
         await waitForJcodeReady(jcode.jcodeId);
       }
 
