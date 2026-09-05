@@ -149,7 +149,7 @@ export const useClassList = () => {
   // 강의 목록 필터링 유틸리티
   const filterClasses = useCallback((selectedYear, selectedTerm) => {
     return classes.filter(course => {
-      if (course.status === 'ARCHIVED') return false;
+      if (['ENDED', 'ARCHIVING', 'ARCHIVED'].includes(course.status)) return false;
       const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
       const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
       return yearMatch && termMatch;

@@ -319,9 +319,10 @@ const WebIDECourses = () => {
     }
   };
 
-  // 완료된 강의와 탈퇴 처리가 끝난 가입 정보는 목록에서 제외한다.
+  // 종료가 완료된 강의는 현재 수업 목록에서 제외한다. 관리자는 수업 관리
+  // 화면에서 종료 강의를 재개설하거나 아카이브할 수 있다.
   const filteredCourses = courses.filter(course => {
-    if (course.status === 'ARCHIVED' || course.membershipStatus === 'ARCHIVED') return false;
+    if (['ENDED', 'ARCHIVING', 'ARCHIVED'].includes(course.status) || course.membershipStatus === 'ARCHIVED') return false;
     const yearMatch = selectedYear === 'all' || course.courseYear === selectedYear;
     const termMatch = selectedTerm === 'all' || course.courseTerm === selectedTerm;
     return yearMatch && termMatch;
