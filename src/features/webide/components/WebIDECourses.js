@@ -691,7 +691,7 @@ const WebIDECourses = () => {
                             textTransform: 'none',
                           }}
                         >
-                          일반 작업공간
+                          JCode 실행
                         </Button>
                         <Box sx={{ display: 'flex', gap: 0.75 }}>
                           <Button

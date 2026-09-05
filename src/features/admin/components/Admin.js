@@ -46,10 +46,7 @@ const Admin = () => {
     year: new Date().getFullYear(),
     professor: '',
     clss: '',
-    vnc: false,
-    hwCount: 10,
-    pracEnabled: false,
-    pracCount: 0
+    vnc: false
   });
 
   const { isDarkMode } = useTheme();
@@ -91,10 +88,7 @@ const Admin = () => {
         year: selectedItem.year || new Date().getFullYear(),
         professor: selectedItem.professor || '',
         clss: selectedItem.clss || '',
-        vnc: Boolean(selectedItem.vnc),
-        hwCount: selectedItem.hwCount || 10,
-        pracEnabled: selectedItem.pracEnabled || false,
-        pracCount: selectedItem.pracCount || 0
+        vnc: Boolean(selectedItem.vnc)
       });
     } else {
       setFormData({
@@ -106,10 +100,7 @@ const Admin = () => {
         year: new Date().getFullYear(),
         professor: '',
         clss: '',
-        vnc: false,
-        hwCount: 10,
-        pracEnabled: false,
-        pracCount: 0
+        vnc: false
       });
     }
   }, [selectedItem]);
@@ -138,19 +129,14 @@ const Admin = () => {
       year: new Date().getFullYear(),
       professor: '',
       clss: '',
-      vnc: false,
-      hwCount: 10,
-      pracEnabled: false,
-      pracCount: 0
+      vnc: false
     });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const numericFields = ['year', 'term', 'clss', 'hwCount', 'pracCount'];
+    const numericFields = ['year', 'term', 'clss'];
     let parsed = numericFields.includes(name) ? (parseInt(value) || 0) : value;
-    if (name === 'hwCount') parsed = Math.max(10, Math.min(15, parsed));
-    if (name === 'pracCount') parsed = Math.max(0, Math.min(10, parsed));
     setFormData(prev => ({
       ...prev,
       [name]: parsed
@@ -178,9 +164,9 @@ const Admin = () => {
             professor: formData.professor,
             clss: formData.clss,
             vnc: formData.vnc,
-            hwCount: formData.hwCount,
-            pracEnabled: formData.pracEnabled,
-            pracCount: formData.pracEnabled ? formData.pracCount : 0
+            hwCount: 0,
+            pracEnabled: false,
+            pracCount: 0
           }, { showToast: false });
         } else if (dialogType === 'add') {
           await adminService.createCourse({
@@ -191,9 +177,9 @@ const Admin = () => {
             professor: formData.professor,
             clss: formData.clss,
             vnc: formData.vnc,
-            hwCount: formData.hwCount,
-            pracEnabled: formData.pracEnabled,
-            pracCount: formData.pracEnabled ? formData.pracCount : 0
+            hwCount: 0,
+            pracEnabled: false,
+            pracCount: 0
           }, { showToast: false });
           toast.info('강의 개설을 요청했습니다. 준비가 끝나면 상태가 자동으로 변경됩니다.');
         }
@@ -490,56 +476,6 @@ const Admin = () => {
                     label="VNC 환경 사용 (생성 후 변경 불가)"
                     sx={{ mb: 2, fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
                   />
-                  <TextField
-                    fullWidth
-                    name="hwCount"
-                    label="과제(HW) 개수"
-                    type="number"
-                    value={formData.hwCount}
-                    onChange={handleInputChange}
-                    inputProps={{ min: 10, max: 15 }}
-                    sx={{ mb: 2 }}
-                    InputProps={{
-                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                    }}
-                    InputLabelProps={{
-                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                    }}
-                    helperText="10~15 사이의 값 (기본: 10)"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.pracEnabled}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          pracEnabled: e.target.checked,
-                          pracCount: e.target.checked ? (prev.pracCount || 5) : 0
-                        }))}
-                      />
-                    }
-                    label="실습(Prac) 사용"
-                    sx={{ mb: 1, fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                  />
-                  {formData.pracEnabled && (
-                    <TextField
-                      fullWidth
-                      name="pracCount"
-                      label="실습(Prac) 개수"
-                      type="number"
-                      value={formData.pracCount}
-                      onChange={handleInputChange}
-                      inputProps={{ min: 1, max: 10 }}
-                      sx={{ mb: 2 }}
-                      InputProps={{
-                        sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                      }}
-                      InputLabelProps={{
-                        sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                      }}
-                      helperText="1~10 사이의 값"
-                    />
-                  )}
                 </>
               ) : (
                 // 사용자 관리 폼
