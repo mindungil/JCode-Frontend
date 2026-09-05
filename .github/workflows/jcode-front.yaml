@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-22.04
     environment: ${{ inputs.target }}
     env:
-      HARBOR_REGISTRY: harbor.jbnu.ac.kr
+      HARBOR_REGISTRY: harbor.jedutools.io
       HARBOR_PROJECT: jdevops
       IMAGE_NAME: jcode-front
     steps:
