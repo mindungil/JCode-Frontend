@@ -673,34 +673,12 @@ const WebIDECourses = () => {
                           }[course.status] || '현재 사용할 수 없는 강의입니다'}
                         </Typography>
                       ) : (
-                      <>
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={expandedCourse === course.courseId ? <ExpandLessIcon sx={{ fontSize: '1rem' }} /> : <ExpandMoreIcon sx={{ fontSize: '1rem' }} />}
-                        onClick={() => handleToggleAssignments(course.courseId)}
-                        size="small"
-                        disabled={actionLoading}
-                        sx={{
-                          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                          fontSize: '0.75rem',
-                          py: 0.5,
-                          px: 1.5,
-                          minHeight: '28px',
-                          borderRadius: '20px',
-                          textTransform: 'none',
-                          flex: canViewCourseStudents(course, user) ? 1 : 'auto'
-                        }}
-                      >
-                        과제 목록
-                      </Button>
-
-                      {canViewCourseStudents(course, user) && (
+                      <Stack spacing={0.75} sx={{ width: '100%' }}>
                         <Button
                           fullWidth
-                          variant="outlined"
+                          variant="contained"
                           startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                          onClick={() => handleWebIDEOpen(course.courseId, true)}
+                          onClick={() => handleWebIDEOpen(course.courseId)}
                           size="small"
                           disabled={actionLoading}
                           sx={{
@@ -709,26 +687,55 @@ const WebIDECourses = () => {
                             py: 0.5,
                             px: 1.5,
                             minHeight: '28px',
-                            borderRadius: '20px',
+                            borderRadius: 1,
                             textTransform: 'none',
-                            ml: 1,
-                            flex: 1,
-                            borderColor: (theme) =>
-                              theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                            color: (theme) =>
-                              theme.palette.mode === 'dark' ? '#FF79C6' : 'primary.main',
-                            '&:hover': {
-                              borderColor: (theme) =>
-                                theme.palette.mode === 'dark' ? '#FF92D0' : 'primary.dark',
-                              backgroundColor: (theme) =>
-                                theme.palette.mode === 'dark' ? 'rgba(255, 121, 198, 0.1)' : 'rgba(63, 81, 181, 0.1)'
-                            }
                           }}
                         >
-                          스냅샷 확인
+                          일반 작업공간
                         </Button>
-                      )}
-                      </>
+                        <Box sx={{ display: 'flex', gap: 0.75 }}>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={expandedCourse === course.courseId ? <ExpandLessIcon sx={{ fontSize: '1rem' }} /> : <ExpandMoreIcon sx={{ fontSize: '1rem' }} />}
+                            onClick={() => handleToggleAssignments(course.courseId)}
+                            size="small"
+                            disabled={actionLoading}
+                            sx={{
+                              fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                              px: 1,
+                              minHeight: '28px',
+                              borderRadius: 1,
+                              textTransform: 'none'
+                            }}
+                          >
+                            과제 목록
+                          </Button>
+                          {canViewCourseStudents(course, user) && (
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
+                              onClick={() => handleWebIDEOpen(course.courseId, true)}
+                              size="small"
+                              disabled={actionLoading}
+                              sx={{
+                                fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                                px: 1,
+                                minHeight: '28px',
+                                borderRadius: 1,
+                                textTransform: 'none'
+                              }}
+                            >
+                              스냅샷 확인
+                            </Button>
+                          )}
+                        </Box>
+                      </Stack>
                       )}
 
                     </CardActions>

@@ -406,7 +406,7 @@ const AssignmentDetail = () => {
         return;
       }
 
-      const finalUrl = await redirectToJCode(student.email, courseId);
+      const finalUrl = await redirectToJCode(student.email, courseId, assignmentId);
       
       if (!finalUrl) {
         throw new Error("리다이렉트 URL을 찾을 수 없습니다");
@@ -608,4 +608,3 @@ const AssignmentDetail = () => {
 };
 
 export default AssignmentDetail;
-

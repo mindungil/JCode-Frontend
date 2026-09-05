@@ -27,11 +27,12 @@ export const fetchChartDataByTimeRange = async (courseId, assignmentId, startDat
 };
 
 // JCode로 리다이렉트 (redirectService를 사용하도록 변경)
-export const redirectToJCode = async (email, courseId) => {
+export const redirectToJCode = async (email, courseId, assignmentId = null) => {
   try {
     const result = await redirectService.redirectToJCode({
       userEmail: email,
-      courseId: courseId
+      courseId: courseId,
+      ...(assignmentId && { assignmentId })
     });
     
     return result.url || result.data?.url;
@@ -51,4 +52,4 @@ export const fetchStudents = courseService.getCourseUsers;
 export const cleanupChartInstance = watcherService.cleanupChartInstance;
 
 // 사용자 강의 세부 정보 가져오기 (userService를 사용하도록 변경)
-export const fetchUserCoursesDetails = userService.getMyCoursesDetails; 
+export const fetchUserCoursesDetails = userService.getMyCoursesDetails;
