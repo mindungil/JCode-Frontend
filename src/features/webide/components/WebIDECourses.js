@@ -38,6 +38,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
+import { renderJcodeProvisioningPage } from '../utils/renderJcodeProvisioningPage';
 
 const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 const JCODE_READY_TIMEOUT_MS = 3 * 60 * 1000;
@@ -184,8 +185,10 @@ const WebIDECourses = () => {
       return;
     }
     ideWindow.opener = null;
-    ideWindow.document.title = 'JCode 실행 환경 생성 중';
-    ideWindow.document.body.textContent = '개인 JCode 실행 환경을 생성하고 있습니다. 준비가 완료되면 자동으로 연결됩니다. 일반적으로 오래 걸리지 않으니 잠시만 기다려 주세요.';
+    renderJcodeProvisioningPage(ideWindow, {
+      isDarkMode,
+      assetOrigin: window.location.origin
+    });
     setActionLoading(true);
     try {
       const jcode = await jcodeService.createJCode(courseId, {
