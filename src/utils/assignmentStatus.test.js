@@ -1,4 +1,4 @@
-import { getAssignmentStatus } from './assignmentStatus';
+import { getAssignmentDeadlineTooltip, getAssignmentStatus } from './assignmentStatus';
 
 describe('getAssignmentStatus', () => {
   test.each([
@@ -23,5 +23,24 @@ describe('getAssignmentStatus', () => {
   test('does not present an unknown status as active', () => {
     expect(getAssignmentStatus({ lifecycleStatus: 'ACTIVE', scheduleStatus: 'UNKNOWN' }))
       .toEqual({ label: '상태 확인 필요', color: 'default', progress: false });
+  });
+});
+
+describe('getAssignmentDeadlineTooltip', () => {
+  test('formats the exact deadline for the status chip tooltip', () => {
+    const deadline = '2026-09-10T13:30:00Z';
+    const formatted = new Intl.DateTimeFormat('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(deadline));
+
+    expect(getAssignmentDeadlineTooltip(deadline)).toBe(`마감일: ${formatted}`);
+  });
+
+  test.each([null, '', 'not-a-date'])('handles missing or invalid deadline %p', (deadline) => {
+    expect(getAssignmentDeadlineTooltip(deadline)).toBe('마감일 정보 없음');
   });
 });

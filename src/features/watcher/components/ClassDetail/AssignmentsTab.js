@@ -21,7 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import RemainingTime from '../common/RemainingTime';
-import { getAssignmentStatus } from '../../../../utils/assignmentStatus';
+import { getAssignmentDeadlineTooltip, getAssignmentStatus } from '../../../../utils/assignmentStatus';
 
 /**
  * 과제 목록 탭 컴포넌트
@@ -171,17 +171,19 @@ const AssignmentsTab = ({
                     <RemainingTime deadline={assignment.deadlineDate} />
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      size="small"
-                      color={status.color}
-                      variant="outlined"
-                      label={(
-                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-                          {status.progress && <CircularProgress size={12} />}
-                          {status.label}
-                        </Box>
-                      )}
-                    />
+                    <Tooltip title={getAssignmentDeadlineTooltip(assignment.deadlineDate)} arrow>
+                      <Chip
+                        size="small"
+                        color={status.color}
+                        variant="outlined"
+                        label={(
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                            {status.progress && <CircularProgress size={12} />}
+                            {status.label}
+                          </Box>
+                        )}
+                      />
+                    </Tooltip>
                   </TableCell>
                   
                   {/* 학생이 아닌 경우에만 작업 셀을 표시 */}

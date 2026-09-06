@@ -26,7 +26,6 @@ export const useClassList = () => {
         response.data.map(course => ({
           courseId: course.courseId,
           courseName: course.name,
-          courseCode: course.code,
           courseProfessor: course.professor,
           courseYear: course.year,
           courseTerm: course.term,
@@ -51,9 +50,8 @@ export const useClassList = () => {
     const knownCourseIds = new Set(classes.map(course => course.courseId));
     try {
       const createResponse = await axios.post('/api/courses', {
-        code: classData.code,
         name: classData.name,
-        professor: classData.professor,
+        ...(classData.professor?.trim() ? { professor: classData.professor.trim() } : {}),
         year: classData.year,
         term: classData.term,
         clss: parseInt(classData.clss),
@@ -76,9 +74,10 @@ export const useClassList = () => {
           const latest = await axios.get('/api/courses');
           const accepted = latest.data.find(course =>
             !knownCourseIds.has(course.courseId)
-            &&
-            course.code?.toLowerCase() === classData.code.trim().toLowerCase()
+            && course.name?.trim() === classData.name.trim()
             && Number(course.clss) === Number(classData.clss)
+            && Number(course.year) === Number(classData.year)
+            && Number(course.term) === Number(classData.term)
             && course.status !== 'ARCHIVED'
           );
           if (accepted) {
@@ -177,8 +176,18 @@ export const useClassList = () => {
 
   // 폼 유효성 검사
   const validateClassForm = useCallback((formData) => {
-    const errors = { courseClss: '', courseCode: '' };
+    const errors = { courseClss: '', courseName: '', professor: '' };
     let isValid = true;
+
+    if (!formData.name?.trim()) {
+      errors.courseName = '과목명을 입력해주세요';
+      isValid = false;
+    }
+
+    if (user?.role === 'ADMIN' && !formData.professor?.trim()) {
+      errors.professor = '담당 교수명을 입력해주세요';
+      isValid = false;
+    }
 
     // 분반 유효성 검사 - 숫자만 허용
     if (!/^\d+$/.test(formData.clss)) {
@@ -186,14 +195,8 @@ export const useClassList = () => {
       isValid = false;
     }
 
-    // 과목 코드 유효성 검사 - 영문자로 시작하고 영문자+숫자 조합만 허용
-    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(formData.code)) {
-      errors.courseCode = '영문자로 시작하고 영문자와 숫자만 사용 가능합니다';
-      isValid = false;
-    }
-
     return { isValid, errors };
-  }, []);
+  }, [user?.role]);
 
   // 초기 데이터 로드
   useEffect(() => {

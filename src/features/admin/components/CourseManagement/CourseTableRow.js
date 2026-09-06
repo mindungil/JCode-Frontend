@@ -38,7 +38,6 @@ const CourseTableRow = memo(({
     <TableRow key={item.courseId}>
       <TableCell sx={CELL_STYLE}>{itemIndex}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.courseName}</TableCell>
-      <TableCell sx={CELL_STYLE}>{item.courseCode}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.professor}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.year}</TableCell>
       <TableCell sx={CELL_STYLE}>{item.term}</TableCell>

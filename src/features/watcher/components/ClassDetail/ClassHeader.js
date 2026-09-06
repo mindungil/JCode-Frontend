@@ -49,19 +49,6 @@ const ClassHeader = ({ course, courseId }) => {
           </Typography>
           
           <Box 
-            component="span" 
-            sx={{ 
-              px: 1.5,
-              py: 0.5,
-              borderRadius: 1,
-              backgroundColor: (theme) => 
-                theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-            }}
-          >
-            {course.courseCode}
-          </Box>
-          
-          <Box 
             component="span"
             sx={{ 
               px: 1.5,
@@ -90,4 +77,4 @@ const ClassHeader = ({ course, courseId }) => {
   );
 };
 
-export default ClassHeader; 
+export default ClassHeader;

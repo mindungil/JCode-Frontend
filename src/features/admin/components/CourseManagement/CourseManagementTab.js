@@ -14,7 +14,6 @@ const CourseManagementTab = ({
   const columns = useMemo(() => [
     { id: 'no', label: 'No.' },
     { id: 'courseName', label: '수업명' },
-    { id: 'courseCode', label: '수업 코드' },
     { id: 'professor', label: '담당 교수' },
     { id: 'year', label: '년도' },
     { id: 'term', label: '학기' },
@@ -25,7 +24,7 @@ const CourseManagementTab = ({
 
   // 검색 필드 정의
   const searchFields = useMemo(() => [
-    'courseName', 'courseCode', 'professor', 'year', 'term', 'clss', 'status', 'vnc'
+    'courseName', 'professor', 'year', 'term', 'clss', 'status', 'vnc'
   ], []);
 
   // 정렬 훅
@@ -81,7 +80,7 @@ const CourseManagementTab = ({
       data={paginatedData}
       sort={sort}
       searchQuery={searchQuery}
-      searchPlaceholder="수업명, 수업 코드, 담당 교수, VNC 사용여부로 검색"
+      searchPlaceholder="수업명, 담당 교수, 분반, VNC 사용여부로 검색"
       paginationInfo={paginationInfo}
       onSort={toggleSort}
       onSearchChange={handleSearch}
@@ -91,4 +90,4 @@ const CourseManagementTab = ({
   );
 };
 
-export default CourseManagementTab; 
+export default CourseManagementTab;

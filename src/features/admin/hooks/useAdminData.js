@@ -66,7 +66,6 @@ export const useAdminData = () => {
           courses: courses.map(course => ({
             courseId: course.courseId,
             courseName: course.name,
-            courseCode: course.code,
             term: course.term,
             year: course.year,
             professor: course.professor || '-',

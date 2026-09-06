@@ -7,7 +7,6 @@ import {
   ListItem, 
   ListItemText,
   ListItemButton,
-  CircularProgress,
   Box,
   Chip,
   FormControl,
@@ -22,8 +21,6 @@ import {
   TextField,
   Grid,
   InputLabel,
-  IconButton,
-  Card,
   FormControlLabel,
   Checkbox,
 } from '@mui/material';
@@ -32,7 +29,6 @@ import { selectStyles } from '../../../../styles/selectStyles';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { LoadingSpinner, Button, GlassPaper } from '../../../../components/ui';
 import { useClassList } from '../../hooks';
@@ -42,13 +38,11 @@ import { canManageCourse } from '../../utils/coursePermissions';
 const ClassList = () => {
   const { user } = useAuth();
   const {
-    classes,
     loading,
     error,
     availableYears,
     availableTerms,
     currentSemester,
-    loadClasses,
     addClass,
     regenerateCourseKey,
     filterClasses,
@@ -60,7 +54,6 @@ const ClassList = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [newClass, setNewClass] = useState({
-    code: '',
     name: '',
     professor: '',
     year: new Date().getFullYear(),
@@ -70,7 +63,8 @@ const ClassList = () => {
   });
   const [formErrors, setFormErrors] = useState({
     courseClss: '',
-    courseCode: ''
+    courseName: '',
+    professor: ''
   });
   const [courseKeyDialog, setCourseKeyDialog] = useState({
     open: false,
@@ -118,7 +112,6 @@ const ClassList = () => {
       if (result.success) {
         setOpenDialog(false);
         setNewClass({
-          code: '',
           name: '',
           professor: '',
           year: new Date().getFullYear(),
@@ -126,7 +119,7 @@ const ClassList = () => {
           clss: '',
           vnc: false,
         });
-        setFormErrors({ courseClss: '', courseCode: '' });
+        setFormErrors({ courseClss: '', courseName: '', professor: '' });
 
         if (result.courseKey) {
           setCourseKeyDialog({
@@ -281,35 +274,6 @@ const ClassList = () => {
             </Stack>
           </Box>
 
-          {user?.role === 'PROFESSOR' && (
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                p: 1.5, 
-                mb: 2,
-                bgcolor: 'warning.light', 
-                color: 'warning.contrastText',
-                borderRadius: 1.5,
-                border: (theme) =>
-                  `1px solid ${theme.palette.warning.main}`,
-              }}
-            >
-              <Typography 
-                variant="body2"
-                sx={{ 
-                  fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  fontSize: '0.85rem'
-                }}
-              >
-                <Box component="span" sx={{ fontWeight: 'bold' }}>주의:</Box> 
-                현재 버전에서의 수업 생성은 jedutools@gmail.com으로 문의바랍니다.
-              </Typography>
-            </Paper>
-          )}
-
           <List>
             {filteredClasses.map((classItem, index) => (
               <ListItem 
@@ -360,12 +324,6 @@ const ClassList = () => {
                             <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
                               {classItem.courseName}
                             </Typography>
-                            <Chip 
-                              label={classItem.courseCode} 
-                              size="small" 
-                              color="primary"
-                              sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}
-                            />
                             {classItem.status && classItem.status !== 'ACTIVE' && (
                               <Chip
                                 label={{
@@ -449,7 +407,7 @@ const ClassList = () => {
             </Typography>
           )}
 
-          {user?.role === 'ADMIN' && (
+          {['ADMIN', 'PROFESSOR'].includes(user?.role) && (
             <ListItem 
               disablePadding 
               divider
@@ -507,51 +465,31 @@ const ClassList = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="과목 코드"
-                    value={newClass.code}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^A-Za-z0-9]/g, ''); // 영문자와 숫자만 허용
-                      setNewClass({ ...newClass, code: value });
-                      if (formErrors.courseCode) {
-                        setFormErrors({ ...formErrors, courseCode: '' });
-                      }
-                    }}
-                    onBlur={() => {
-                      if (newClass.code && !/^[A-Za-z][A-Za-z0-9]*$/.test(newClass.code)) {
-                        setFormErrors({
-                          ...formErrors,
-                          courseCode: '영문자로 시작하고 영문자와 숫자만 사용 가능합니다'
-                        });
-                      }
-                    }}
-                    placeholder="ex) CSE1001"
-                    helperText={formErrors.courseCode || "영문자로 시작하고 영문자와 숫자만 입력 가능합니다 | 별칭이므로 오아시스와 상관 없습니다"}
-                    error={Boolean(formErrors.courseCode)}
-                    inputProps={{
-                      style: { textTransform: 'uppercase' } // 자동으로 대문자 변환
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
                     label="과목명"
                     value={newClass.name}
-                    onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
+                    onChange={(e) => {
+                      setNewClass({ ...newClass, name: e.target.value });
+                      if (formErrors.courseName) setFormErrors({ ...formErrors, courseName: '' });
+                    }}
                     placeholder="ex) C++ 프로그래밍"
-                    helperText="과목 이름을 입력하세요 (ex: C++ 프로그래밍)"
+                    helperText={formErrors.courseName || '과목 이름을 입력하세요 (ex: C++ 프로그래밍)'}
+                    error={Boolean(formErrors.courseName)}
                   />
                 </Grid>
-                <Grid item xs={12}>
+                {user?.role === 'ADMIN' && <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="교수명"
                     value={newClass.professor}
-                    onChange={(e) => setNewClass({ ...newClass, professor: e.target.value })}
+                    onChange={(e) => {
+                      setNewClass({ ...newClass, professor: e.target.value });
+                      if (formErrors.professor) setFormErrors({ ...formErrors, professor: '' });
+                    }}
                     placeholder="ex) 홍길동"
-                    helperText="교수님 성함을 입력해주십시오"
+                    helperText={formErrors.professor || '담당 교수 성함을 입력하세요'}
+                    error={Boolean(formErrors.professor)}
                   />
-                </Grid>
+                </Grid>}
                 <Grid item xs={12}>
                   <Box sx={{ 
                     display: 'flex', 
@@ -567,7 +505,7 @@ const ClassList = () => {
                         size="medium"
                         fullWidth
                       >
-                        {[2024, 2025, 2026].map(year => (
+                        {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(year => (
                           <MenuItem key={year} value={year}>
                             {year}년
                           </MenuItem>

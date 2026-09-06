@@ -19,3 +19,18 @@ export const getAssignmentStatus = (assignment = {}) => {
   return SCHEDULE_STATUS[assignment.scheduleStatus]
     || { label: '상태 확인 필요', color: 'default', progress: false };
 };
+
+export const getAssignmentDeadlineTooltip = (deadlineDate) => {
+  if (!deadlineDate) return '마감일 정보 없음';
+
+  const deadline = new Date(deadlineDate);
+  if (Number.isNaN(deadline.getTime())) return '마감일 정보 없음';
+
+  return `마감일: ${new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(deadline)}`;
+};

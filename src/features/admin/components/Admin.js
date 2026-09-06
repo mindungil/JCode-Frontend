@@ -41,7 +41,6 @@ const Admin = () => {
     name: '',
     studentNum: '',
     courseName: '',
-    courseCode: '',
     term: '',
     year: new Date().getFullYear(),
     professor: '',
@@ -83,7 +82,6 @@ const Admin = () => {
         name: selectedItem.name || '',
         studentNum: selectedItem.studentId || '',
         courseName: selectedItem.courseName || '',
-        courseCode: selectedItem.courseCode || '',
         term: selectedItem.term || '',
         year: selectedItem.year || new Date().getFullYear(),
         professor: selectedItem.professor || '',
@@ -95,7 +93,6 @@ const Admin = () => {
         name: '',
         studentNum: '',
         courseName: '',
-        courseCode: '',
         term: '',
         year: new Date().getFullYear(),
         professor: '',
@@ -124,7 +121,6 @@ const Admin = () => {
       name: '',
       studentNum: '',
       courseName: '',
-      courseCode: '',
       term: '',
       year: new Date().getFullYear(),
       professor: '',
@@ -146,11 +142,12 @@ const Admin = () => {
   // 제출 핸들러
   const handleSubmit = async () => {
     if (submissionLock.current) return;
+    const knownCourseIds = new Set(users.courses.map(course => course.courseId));
     submissionLock.current = true;
     setSubmitting(true);
     try {
       if (currentTab === 2) { // 수업 관리 탭
-        if (!formData.courseName || !formData.courseCode || !formData.term || !formData.year || !formData.professor || !formData.clss) {
+        if (!formData.courseName || !formData.term || !formData.year || !formData.professor || !formData.clss) {
           toast.error('모든 필드를 입력해주세요.');
           return;
         }
@@ -158,7 +155,6 @@ const Admin = () => {
         if (dialogType === 'edit') {
           await adminService.updateCourse(selectedItem.courseId, {
             name: formData.courseName,
-            code: formData.courseCode,
             term: formData.term,
             year: formData.year,
             professor: formData.professor,
@@ -171,7 +167,6 @@ const Admin = () => {
         } else if (dialogType === 'add') {
           await adminService.createCourse({
             name: formData.courseName,
-            code: formData.courseCode,
             term: formData.term,
             year: formData.year,
             professor: formData.professor,
@@ -204,8 +199,11 @@ const Admin = () => {
         try {
           const latestCourses = await adminService.getAllCourses({ showToast: false });
           const accepted = latestCourses.some(course =>
-            course.code?.toLowerCase() === formData.courseCode.trim().toLowerCase()
+            !knownCourseIds.has(course.courseId)
+            && course.name?.trim() === formData.courseName.trim()
             && Number(course.clss) === Number(formData.clss)
+            && Number(course.year) === Number(formData.year)
+            && Number(course.term) === Number(formData.term)
             && course.status !== 'ARCHIVED'
           );
           if (accepted) {
@@ -233,7 +231,7 @@ const Admin = () => {
     try {
       if (currentTab === 2) {
         await adminService.deleteCourse(selectedItem.courseId, { showToast: false });
-        toast.info(`${selectedItem.courseName} (${selectedItem.courseCode}) 강의 생성 취소를 요청했습니다.`);
+        toast.info(`${selectedItem.courseName} ${selectedItem.clss}분반 강의 생성 취소를 요청했습니다.`);
         await fetchCourses();
       } else {
         await adminService.deleteUser(selectedItem.id);
@@ -257,7 +255,7 @@ const Admin = () => {
     submissionLock.current = true;
     setSubmitting(true);
     try {
-      const courseName = `${selectedItem.courseName} (${selectedItem.courseCode})`;
+      const courseName = `${selectedItem.courseName} ${selectedItem.clss}분반`;
       if (dialogType === 'end') {
         await adminService.endCourse(selectedItem.courseId, { showToast: false });
         toast.success(`${courseName} 강의 종료를 요청했습니다.`);
@@ -293,25 +291,25 @@ const Admin = () => {
       const statusMessages = {
         end: {
           title: '강의 종료',
-          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 종료하시겠습니까?\n\n모든 JCode 인스턴스가 삭제됩니다.`,
+          message: `${selectedItem?.courseName} ${selectedItem?.clss}분반 강의를 종료하시겠습니까?\n\n모든 JCode 인스턴스가 삭제됩니다.`,
           color: 'warning',
           buttonText: '종료'
         },
         archive: {
           title: '강의 아카이브',
-          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 아카이브하시겠습니까?\n\n네임스페이스가 삭제됩니다.`,
+          message: `${selectedItem?.courseName} ${selectedItem?.clss}분반 강의를 아카이브하시겠습니까?\n\n네임스페이스가 삭제됩니다.`,
           color: 'primary',
           buttonText: '아카이브'
         },
         reopen: {
           title: '강의 재개설',
-          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의를 재개설하시겠습니까?\n\n네임스페이스가 재생성됩니다.`,
+          message: `${selectedItem?.courseName} ${selectedItem?.clss}분반 강의를 재개설하시겠습니까?\n\n네임스페이스가 재생성됩니다.`,
           color: 'primary',
           buttonText: '재개설'
         },
         retry: {
           title: '인프라 작업 재시도',
-          message: `${selectedItem?.courseName} (${selectedItem?.courseCode}) 강의의 실패한 인프라 작업을 다시 시도하시겠습니까?`,
+          message: `${selectedItem?.courseName} ${selectedItem?.clss}분반 강의의 실패한 인프라 작업을 다시 시도하시겠습니까?`,
           color: 'error',
           buttonText: '재시도'
         }
@@ -380,22 +378,6 @@ const Admin = () => {
                     label="교수명"
                     value={formData.professor}
                     onChange={handleInputChange}
-                    required
-                    sx={{ mb: 2 }}
-                    InputProps={{
-                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                    }}
-                    InputLabelProps={{
-                      sx: { fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }
-                    }}
-                  />
-                  <TextField
-                    fullWidth
-                    name="courseCode"
-                    label="수업 코드"
-                    value={formData.courseCode}
-                    onChange={handleInputChange}
-                    disabled={dialogType === 'edit'}
                     required
                     sx={{ mb: 2 }}
                     InputProps={{
@@ -516,7 +498,7 @@ const Admin = () => {
           ) : (
             <Typography sx={{ fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif" }}>
               {currentTab === 2 ? 
-                `${selectedItem.courseName} (${selectedItem.courseCode}) 강의 생성을 취소하고 생성된 인프라를 정리하시겠습니까?` :
+                `${selectedItem.courseName} ${selectedItem.clss}분반 강의 생성을 취소하고 생성된 인프라를 정리하시겠습니까?` :
                 `${selectedItem.name} (${selectedItem.email}) 사용자를 삭제하시겠습니까?`}
             </Typography>
           )}

@@ -121,7 +121,7 @@ const adminService = {
     }
 
     // 필수 필드 검증
-    const requiredFields = ['name', 'code', 'professor', 'year', 'term'];
+    const requiredFields = ['name', 'professor', 'year', 'term', 'clss'];
     const missingFields = requiredFields.filter(field => !courseData[field]);
     
     if (missingFields.length > 0) {

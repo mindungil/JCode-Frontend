@@ -22,8 +22,7 @@ export const useSort = (data, initialField = 'name', initialOrder = 'asc') => {
 
       // 문자열 필드들 처리
       const fieldMapping = {
-        'name': 'courseName',
-        'code': 'courseCode'
+        'name': 'courseName'
       };
       const fieldToSort = fieldMapping[sort.field] || sort.field;
       const sortFunction = createStringSort(fieldToSort, sort.order === 'asc');
@@ -53,4 +52,4 @@ export const useSort = (data, initialField = 'name', initialOrder = 'asc') => {
     toggleSort,
     resetSort
   };
-}; 
+};
