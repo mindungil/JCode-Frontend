@@ -39,6 +39,7 @@ import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
 import { renderJcodeProvisioningPage } from '../utils/renderJcodeProvisioningPage';
+import { getAssignmentStatus } from '../../../utils/assignmentStatus';
 
 const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 const JCODE_READY_TIMEOUT_MS = 3 * 60 * 1000;
@@ -758,6 +759,7 @@ const WebIDECourses = () => {
                               .filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED')
                               .map((assignment) => {
                               const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' && assignment.scheduleStatus === 'OPEN';
+                              const assignmentStatus = getAssignmentStatus(assignment);
                               return (
                               <Box
                                 key={assignment.assignmentId}
@@ -777,22 +779,17 @@ const WebIDECourses = () => {
                                   <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif" }}>
                                     {assignment.assignmentName}
                                   </Typography>
-                                  {!assignmentReady && (
-                                    <Chip
-                                      size="small"
-                                      variant="outlined"
-                                      label={{
-                                        PROVISIONING: '준비 중',
-                                        SCHEDULED: '시작 전',
-                                        CLOSED: '마감',
-                                        DELETING: '보관 중',
-                                        PROVISION_FAILED: '준비 오류'
-                                      }[assignment.lifecycleStatus] || ({
-                                        SCHEDULED: '시작 전',
-                                        CLOSED: '마감'
-                                      }[assignment.scheduleStatus] || '사용 불가')}
-                                    />
-                                  )}
+                                  <Chip
+                                    size="small"
+                                    variant="outlined"
+                                    color={assignmentStatus.color}
+                                    label={(
+                                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                                        {assignmentStatus.progress && <CircularProgress size={10} color="inherit" />}
+                                        {assignmentStatus.label}
+                                      </Box>
+                                    )}
+                                  />
                                 </Box>
                                 <Button
                                   size="small"

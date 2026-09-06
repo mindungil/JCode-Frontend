@@ -21,6 +21,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import RemainingTime from '../common/RemainingTime';
+import { getAssignmentStatus } from '../../../../utils/assignmentStatus';
 
 /**
  * 과제 목록 탭 컴포넌트
@@ -36,16 +37,6 @@ const AssignmentsTab = ({
 }) => {
   const navigate = useNavigate();
   const visibleAssignments = assignments.filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED');
-
-  const getStatus = (assignment) => {
-    const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
-    if (lifecycle === 'PROVISIONING') return { label: '환경 준비 중', color: 'info', progress: true };
-    if (lifecycle === 'PROVISION_FAILED') return { label: '준비 오류', color: 'error' };
-    if (lifecycle === 'DELETING') return { label: '보관 중', color: 'info', progress: true };
-    if (assignment.scheduleStatus === 'SCHEDULED') return { label: '시작 전', color: 'default' };
-    if (assignment.scheduleStatus === 'CLOSED') return { label: '마감', color: 'warning' };
-    return { label: '진행 중', color: 'success' };
-  };
 
   // 날짜 형식 변환 함수
   const formatToLocalDateTimeString = (dateString) => {
@@ -114,7 +105,7 @@ const AssignmentsTab = ({
             <TableBody>
               {visibleAssignments.map((assignment) => {
                 const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
-                const status = getStatus(assignment);
+                const status = getAssignmentStatus(assignment);
                 const canManage = lifecycle === 'ACTIVE';
                 return (
                 <TableRow 
