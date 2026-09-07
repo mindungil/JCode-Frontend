@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
 import { jwtDecode } from 'jwt-decode';
 import { requireApiUrl } from '../config/runtimeConfig';
+import { getCurrentToken, isValidToken, refreshTokenRequest, removeToken } from '../utils/tokenUtils';
 
 const AuthContext = createContext(null);
 
@@ -12,23 +13,13 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       setLoading(true);
-      const token = sessionStorage.getItem('jwt');
-      
-      if (!token) {
-        setUser(null);
-        return;
+      let token = getCurrentToken();
+      if (!isValidToken(token)) {
+        token = await refreshTokenRequest();
       }
 
       try {
         const decodedToken = jwtDecode(token);
-        
-        const currentTime = Date.now() / 1000;
-        if (decodedToken.exp && decodedToken.exp < currentTime) {
-          setUser(null);
-          sessionStorage.removeItem('jwt');
-          window.location.href = '/login';
-          return;
-        }
         
         setUser({
           email: decodedToken.sub,
@@ -37,12 +28,12 @@ export const AuthProvider = ({ children }) => {
         });
       } catch (error) {
         setUser(null);
-        sessionStorage.removeItem('jwt');
+        removeToken();
         window.location.href = '/login';
       }
     } catch (error) {
       setUser(null);
-      sessionStorage.removeItem('jwt');
+      removeToken();
       window.location.href = '/login';
     } finally {
       setLoading(false);
@@ -64,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       //console.error('로그아웃 실패:', error);
       // 실패해도 로컬 상태는 정리
-      sessionStorage.removeItem('jwt');
+      removeToken();
       window.location.href = '/login';
     }
   };

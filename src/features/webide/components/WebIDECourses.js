@@ -230,7 +230,7 @@ const WebIDECourses = () => {
     throw new Error('JCode 준비 시간이 길어지고 있습니다. 잠시 후 다시 시도해주세요.');
   };
 
-  const getJcodeRedirect = async (redirectData) => {
+  const getJcodeRedirect = async (redirectData, jcodeId) => {
     let lastError;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -238,6 +238,10 @@ const WebIDECourses = () => {
       } catch (error) {
         lastError = error;
         const status = error.response?.status;
+        if (status === 409 && jcodeId) {
+          await waitForJcodeReady(jcodeId);
+          continue;
+        }
         if (status && status !== 409 && status < 500) throw error;
         if (attempt < 4) await sleep(1500);
       }
@@ -274,7 +278,7 @@ const WebIDECourses = () => {
         courseId: courseId,
         snapshot: isSnapshot,
         ...(assignmentId && { assignmentId })
-      });
+      }, jcode.jcodeId);
 
       if (redirectData?.url) {
         ideWindow.location.replace(redirectData.url);

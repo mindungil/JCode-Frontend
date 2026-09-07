@@ -8,7 +8,7 @@ import { requireApiUrl } from '../config/runtimeConfig';
  */
 
 /**
- * 토큰 만료 체크 (5분 전)
+ * 토큰 만료 체크 (1분 전)
  */
 export const isTokenExpiringSoon = (token) => {
   try {
@@ -16,7 +16,7 @@ export const isTokenExpiringSoon = (token) => {
     const expirationTime = decoded.exp * 1000;
     const currentTime = Date.now();
     const timeUntilExpiry = expirationTime - currentTime;
-    return timeUntilExpiry < 5 * 60 * 1000;
+    return timeUntilExpiry < 60 * 1000;
   } catch (error) {
     return true;
   }
@@ -25,24 +25,32 @@ export const isTokenExpiringSoon = (token) => {
 /**
  * 토큰 갱신 함수 (순수 함수, 다른 서비스에 의존하지 않음)
  */
+let refreshPromise = null;
+
 export const refreshTokenRequest = async () => {
-  try {
-    const response = await axios.create({
+  if (!refreshPromise) {
+    refreshPromise = axios.create({
       baseURL: requireApiUrl(),
       withCredentials: true
-    }).post('/api/auth/refresh', null);
-
-    const authHeader = response.headers['authorization'];
-    if (authHeader?.startsWith('Bearer ')) {
-      const newToken = authHeader.substring(7);
-      sessionStorage.setItem('jwt', newToken);
-      return newToken;
-    }
-    throw new Error('토큰이 응답 헤더에 없습니다.');
-  } catch (error) {
-    sessionStorage.removeItem('jwt');
-    throw error;
+    }).post('/api/auth/refresh', null)
+      .then((response) => {
+        const authHeader = response.headers['authorization'];
+        if (!authHeader?.startsWith('Bearer ')) {
+          throw new Error('토큰이 응답 헤더에 없습니다.');
+        }
+        const newToken = authHeader.substring(7);
+        sessionStorage.setItem('jwt', newToken);
+        return newToken;
+      })
+      .catch((error) => {
+        sessionStorage.removeItem('jwt');
+        throw error;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
   }
+  return refreshPromise;
 };
 
 /**
