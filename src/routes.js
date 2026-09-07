@@ -5,6 +5,7 @@ import { WebIDECourses } from './features/webide';
 import { ProfileSetup } from './features/auth';
 import { ProfileSettings } from './features/profile';
 import { AboutPage } from './features/about';
+import { CourseCreatePage } from './features/courses';
 //import HomePage from './pages/HomePage';
 
 export const routes = [
@@ -50,12 +51,20 @@ export const routes = [
     order: 2,
   },
   {
+    path: '/courses/new',
+    element: CourseCreatePage,
+    roles: ['PROFESSOR'],
+    showInNav: true,
+    label: '수업 개설',
+    order: 3,
+  },
+  {
     path: '/admin/*',
     element: AdminPage,
     roles: ['ADMIN'],
     showInNav: true,
     label: 'Admin',
-    order: 3,
+    order: 4,
   },
   {
     path: '/about',
@@ -63,7 +72,7 @@ export const routes = [
     roles: [], // 누구나 접근 가능
     showInNav: true,
     label: 'About',
-    order: 4,
+    order: 5,
   },
 ];
 
@@ -82,4 +91,4 @@ export const getDefaultRoute = (role, assistantCourses = []) => {
     default:
       return '/login';
   }
-}; 
+};

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getErrorMessage } from '../../../services/errorHandler';
+import { findAcceptedCourse } from '../../courses/utils/courseCreation';
 
 export const useClassList = () => {
   const { user } = useAuth();
@@ -58,7 +59,7 @@ export const useClassList = () => {
         vnc: classData.vnc
       });
 
-      const { courseId, courseKey } = createResponse.data;
+      const { courseId, courseKey, status } = createResponse.data;
 
       // 생성 요청이 수락되면 창을 즉시 닫을 수 있도록 목록 갱신은 백그라운드에서 수행한다.
       void loadClasses(true);
@@ -66,26 +67,21 @@ export const useClassList = () => {
       return { 
         success: true, 
         courseId, 
-        courseKey 
+        courseKey,
+        status,
       };
     } catch (err) {
-      if (!err.response && user?.role === 'ADMIN') {
+      if (!err.response) {
         try {
-          const latest = await axios.get('/api/courses');
-          const accepted = latest.data.find(course =>
-            !knownCourseIds.has(course.courseId)
-            && course.name?.trim() === classData.name.trim()
-            && Number(course.clss) === Number(classData.clss)
-            && Number(course.year) === Number(classData.year)
-            && Number(course.term) === Number(classData.term)
-            && course.status !== 'ARCHIVED'
-          );
+          const latest = await axios.get(user?.role === 'ADMIN' ? '/api/courses' : '/api/users/me/courses');
+          const accepted = findAcceptedCourse(latest.data, knownCourseIds, classData);
           if (accepted) {
             void loadClasses(true);
             return {
               success: true,
               courseId: accepted.courseId,
-              courseKey: null
+              courseKey: null,
+              status: accepted.status,
             };
           }
         } catch {

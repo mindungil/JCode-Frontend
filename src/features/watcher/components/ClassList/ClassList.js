@@ -195,7 +195,9 @@ const ClassList = () => {
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
-            alignItems: 'center',
+            alignItems: { xs: 'stretch', md: 'center' },
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 2,
             mb: 3 
           }}>
             <Typography 
@@ -205,7 +207,18 @@ const ClassList = () => {
               수업 목록 ({filteredClasses.length})
             </Typography>
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+              {user?.role === 'PROFESSOR' && (
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/courses/new')}
+                  sx={{ whiteSpace: 'nowrap', flexGrow: { xs: 1, sm: 0 } }}
+                >
+                  수업 개설
+                </Button>
+              )}
               <FormControl sx={{ minWidth: 100 }}>
                 <Select
                   value={selectedYear}
@@ -407,7 +420,7 @@ const ClassList = () => {
             </Typography>
           )}
 
-          {['ADMIN', 'PROFESSOR'].includes(user?.role) && (
+          {user?.role === 'ADMIN' && (
             <ListItem 
               disablePadding 
               divider
