@@ -54,6 +54,7 @@ const createInitialForm = () => ({
 
 const CourseCreatePage = () => {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const navigate = useNavigate();
   const { addClass, classes, validateClassForm } = useClassList();
   const [form, setForm] = useState(createInitialForm);
@@ -71,13 +72,21 @@ const CourseCreatePage = () => {
   }, []);
 
   useEffect(() => {
+    if (isAdmin) {
+      setProfileName('');
+      setProfileError('');
+      return undefined;
+    }
+
     let active = true;
 
     userService.getCurrentUser({ showToast: false })
       .then((profile) => {
         if (!active) return;
-        setProfileName(profile?.name || '');
-        setProfileError(profile?.name ? '' : '프로필에서 교수명을 확인할 수 없습니다.');
+        const professorName = profile?.name || '';
+        setProfileName(professorName);
+        setForm((current) => ({ ...current, professor: professorName }));
+        setProfileError(professorName ? '' : '프로필에서 교수명을 확인할 수 없습니다.');
       })
       .catch(() => {
         if (!active) return;
@@ -87,7 +96,7 @@ const CourseCreatePage = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAdmin]);
 
   const createdCourse = result
     ? classes.find((course) => Number(course.courseId) === Number(result.courseId))
@@ -103,6 +112,9 @@ const CourseCreatePage = () => {
     }
     if (field === 'clss' && errors.courseClss) {
       setErrors((current) => ({ ...current, courseClss: '' }));
+    }
+    if (field === 'professor' && errors.professor) {
+      setErrors((current) => ({ ...current, professor: '' }));
     }
   };
 
@@ -144,7 +156,7 @@ const CourseCreatePage = () => {
   };
 
   const resetForm = () => {
-    setForm(createInitialForm());
+    setForm({ ...createInitialForm(), professor: isAdmin ? '' : profileName });
     setErrors({ courseName: '', courseClss: '', professor: '' });
     setResult(null);
     setCopied(false);
@@ -253,8 +265,11 @@ const CourseCreatePage = () => {
                 <TextField
                   fullWidth
                   label="담당 교수"
-                  value={profileName}
-                  InputProps={{ readOnly: true }}
+                  value={isAdmin ? form.professor : profileName}
+                  onChange={isAdmin ? (event) => updateField('professor', event.target.value) : undefined}
+                  error={isAdmin && Boolean(errors.professor)}
+                  helperText={isAdmin ? errors.professor : ''}
+                  InputProps={{ readOnly: !isAdmin }}
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
@@ -311,7 +326,7 @@ const CourseCreatePage = () => {
               type="submit"
               variant="contained"
               startIcon={<AddIcon />}
-              disabled={submitting || Boolean(profileError) || !profileName}
+              disabled={submitting || Boolean(profileError) || (!isAdmin && !profileName)}
             >
               {submitting ? '요청 중' : '수업 개설'}
             </Button>

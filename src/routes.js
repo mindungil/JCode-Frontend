@@ -53,10 +53,8 @@ export const routes = [
   {
     path: '/courses/new',
     element: CourseCreatePage,
-    roles: ['PROFESSOR'],
-    showInNav: true,
-    label: '수업 개설',
-    order: 3,
+    roles: ['PROFESSOR', 'ADMIN'],
+    showInNav: false,
   },
   {
     path: '/admin/*',

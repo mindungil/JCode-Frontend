@@ -9,12 +9,11 @@ jest.mock('./features/profile', () => ({ ProfileSettings: () => null }));
 jest.mock('./features/about', () => ({ AboutPage: () => null }));
 jest.mock('./features/courses', () => ({ CourseCreatePage: () => null }));
 
-test('exposes course creation as a professor-only navigation route', () => {
+test('keeps course creation available to instructors without a dedicated navigation item', () => {
   const courseCreateRoute = routes.find((route) => route.path === '/courses/new');
 
   expect(courseCreateRoute).toMatchObject({
-    roles: ['PROFESSOR'],
-    showInNav: true,
-    label: '수업 개설',
+    roles: ['PROFESSOR', 'ADMIN'],
+    showInNav: false,
   });
 });

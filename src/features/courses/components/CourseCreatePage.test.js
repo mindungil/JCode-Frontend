@@ -4,8 +4,10 @@ import CourseCreatePage from './CourseCreatePage';
 import { userService } from '../../../services/api';
 import { useClassList } from '../../watcher/hooks';
 
+let mockUser;
+
 jest.mock('../../../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { email: 'professor@example.com', role: 'PROFESSOR' } }),
+  useAuth: () => ({ user: mockUser }),
 }));
 jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
@@ -22,6 +24,7 @@ describe('CourseCreatePage', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUser = { email: 'professor@example.com', role: 'PROFESSOR' };
     userService.getCurrentUser.mockResolvedValue({ name: '김교수' });
     addClass.mockResolvedValue({
       success: true,
@@ -61,5 +64,26 @@ describe('CourseCreatePage', () => {
     })));
     expect(await screen.findByDisplayValue('student-join-code')).toBeInTheDocument();
     expect(screen.getByText('환경 준비 중')).toBeInTheDocument();
+  });
+
+  test('lets an administrator specify the professor for a new course', async () => {
+    mockUser = { email: 'admin@example.com', role: 'ADMIN' };
+    render(<CourseCreatePage />);
+
+    const professorInput = screen.getByLabelText('담당 교수');
+    expect(professorInput).not.toHaveAttribute('readonly');
+    expect(userService.getCurrentUser).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('과목명'), { target: { value: '알고리즘' } });
+    fireEvent.change(professorInput, { target: { value: '박현찬' } });
+    fireEvent.change(screen.getByLabelText('분반'), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: '수업 개설' }));
+
+    await waitFor(() => expect(addClass).toHaveBeenCalledWith(expect.objectContaining({
+      name: '알고리즘',
+      professor: '박현찬',
+      clss: '1',
+    })));
+    expect(await screen.findByDisplayValue('student-join-code')).toBeInTheDocument();
   });
 });
