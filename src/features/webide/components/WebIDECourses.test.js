@@ -20,7 +20,7 @@ jest.mock('../../../services/api', () => ({
 import { CourseActionTile } from './WebIDECourses';
 
 describe('CourseActionTile', () => {
-  test('renders course actions with a visible solid outline', () => {
+  test('renders course actions with a visible dashed outline', () => {
     render(
       <CourseActionTile
         icon={<span aria-hidden="true">+</span>}
@@ -33,7 +33,7 @@ describe('CourseActionTile', () => {
 
     expect(card).toHaveClass('MuiPaper-outlined');
     expect(card).toHaveStyle({
-      borderStyle: 'solid',
+      borderStyle: 'dashed',
       borderWidth: '1px',
     });
   });

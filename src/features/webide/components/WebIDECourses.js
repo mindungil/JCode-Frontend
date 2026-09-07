@@ -71,7 +71,7 @@ export const CourseActionTile = ({ icon, label, onClick }) => (
       flex: '1 1 0',
       minHeight: 0,
       overflow: 'hidden',
-      borderStyle: 'solid',
+      borderStyle: 'dashed',
       borderWidth: '1px',
       borderColor: (theme) => theme.palette.mode === 'dark' ? '#7E8595' : '#68707D',
       transition: 'border-color 0.2s ease, background-color 0.2s ease',
