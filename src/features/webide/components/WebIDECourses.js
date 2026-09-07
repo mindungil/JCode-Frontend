@@ -63,17 +63,20 @@ const courseCardSx = {
   borderRadius: 1,
 };
 
-const CourseActionTile = ({ icon, label, onClick }) => (
+export const CourseActionTile = ({ icon, label, onClick }) => (
   <Card
+    variant="outlined"
     sx={{
       ...courseCardSx,
       flex: '1 1 0',
       minHeight: 0,
       overflow: 'hidden',
-      border: (theme) => `2px solid ${theme.palette.mode === 'dark' ? '#747B90' : '#A5ABB3'}`,
+      borderStyle: 'solid',
+      borderWidth: '1px',
+      borderColor: (theme) => theme.palette.mode === 'dark' ? '#7E8595' : '#68707D',
       transition: 'border-color 0.2s ease, background-color 0.2s ease',
       '&:hover': {
-        borderColor: (theme) => theme.palette.mode === 'dark' ? '#A3A9B8' : '#747B85',
+        borderColor: (theme) => theme.palette.mode === 'dark' ? '#B5BAC7' : '#3F4650',
         backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#30323F' : '#FAFAFA',
       },
     }}
