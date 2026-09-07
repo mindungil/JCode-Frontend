@@ -3,6 +3,23 @@ import { Box, Chip, CircularProgress, Tooltip } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { getAssignmentDeadlineTooltip, getAssignmentStatus } from '../../utils/assignmentStatus';
 
+const STATUS_TONES = {
+  light: {
+    success: '#496B52',
+    warning: '#756438',
+    error: '#8A5357',
+    info: '#526A78',
+    default: '#626870',
+  },
+  dark: {
+    success: '#93A997',
+    warning: '#B1A071',
+    error: '#B98A8D',
+    info: '#91A5B0',
+    default: '#A2A7AE',
+  },
+};
+
 const AssignmentStatusChip = ({ assignment }) => {
   const status = getAssignmentStatus(assignment);
 
@@ -26,25 +43,25 @@ const AssignmentStatusChip = ({ assignment }) => {
             ) : (
               <Box
                 component="span"
-                sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'currentColor', flexShrink: 0 }}
+                sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: 'currentColor', flexShrink: 0 }}
               />
             )}
             {status.label}
           </Box>
         )}
         sx={(theme) => {
-          const palette = theme.palette[status.color] || theme.palette.grey;
-          const tone = palette.main || theme.palette.text.secondary;
+          const tones = STATUS_TONES[theme.palette.mode] || STATUS_TONES.light;
+          const tone = tones[status.color] || tones.default;
 
           return {
-            height: 22,
+            height: 20,
             borderRadius: 1,
             flexShrink: 0,
             color: tone,
-            bgcolor: alpha(tone, 0.08),
-            borderColor: alpha(tone, 0.32),
+            bgcolor: alpha(tone, 0.06),
+            borderColor: alpha(tone, 0.22),
             fontSize: '0.7rem',
-            fontWeight: 600,
+            fontWeight: 500,
             '& .MuiChip-label': {
               display: 'flex',
               alignItems: 'center',

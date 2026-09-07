@@ -757,10 +757,13 @@ const WebIDECourses = () => {
                               <Box
                                 key={assignment.assignmentId}
                                 sx={{
-                                  display: 'flex',
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(0, 1fr) auto auto',
                                   alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  p: 0.75,
+                                  columnGap: 1,
+                                  minHeight: 36,
+                                  px: 1,
+                                  py: 0.75,
                                   borderRadius: 1,
                                   bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                                   '&:hover': {
@@ -768,10 +771,22 @@ const WebIDECourses = () => {
                                   }
                                 }}
                               >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, mr: 1 }}>
-                                  <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif" }}>
-                                    {assignment.assignmentName}
-                                  </Typography>
+                                <Typography
+                                  noWrap
+                                  title={assignment.assignmentName}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    minWidth: 0,
+                                    height: 24,
+                                    fontSize: '0.8rem',
+                                    lineHeight: 1,
+                                    fontFamily: "'Noto Sans KR', sans-serif",
+                                  }}
+                                >
+                                  {assignment.assignmentName}
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', height: 24 }}>
                                   <AssignmentStatusChip assignment={assignment} />
                                 </Box>
                                 <Button
@@ -782,13 +797,19 @@ const WebIDECourses = () => {
                                   disabled={actionLoading || !assignmentReady}
                                   sx={{
                                     fontSize: '0.7rem',
-                                    py: 0.25,
+                                    py: 0,
                                     px: 1,
+                                    height: '24px',
                                     minHeight: '24px',
-                                    borderRadius: '12px',
+                                    lineHeight: 1,
+                                    borderRadius: 1,
                                     textTransform: 'none',
                                     whiteSpace: 'nowrap',
-                                    flexShrink: 0
+                                    flexShrink: 0,
+                                    '& .MuiButton-startIcon': {
+                                      alignItems: 'center',
+                                      marginRight: 0.5,
+                                    },
                                   }}
                                 >
                                   IDE 열기
