@@ -22,8 +22,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  IconButton,
-  Tooltip
+  IconButton
 } from '@mui/material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { userService, jcodeService, redirectService, assignmentService } from '../../../services/api';
@@ -37,10 +36,10 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
+import AssignmentStatusChip from '../../../components/common/AssignmentStatusChip';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
 import { renderJcodeProvisioningPage } from '../utils/renderJcodeProvisioningPage';
-import { getAssignmentDeadlineTooltip, getAssignmentStatus } from '../../../utils/assignmentStatus';
 
 const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 const JCODE_READY_TIMEOUT_MS = 3 * 60 * 1000;
@@ -754,7 +753,6 @@ const WebIDECourses = () => {
                               .filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED')
                               .map((assignment) => {
                               const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' && assignment.scheduleStatus === 'OPEN';
-                              const assignmentStatus = getAssignmentStatus(assignment);
                               return (
                               <Box
                                 key={assignment.assignmentId}
@@ -774,19 +772,7 @@ const WebIDECourses = () => {
                                   <Typography sx={{ fontSize: '0.8rem', fontFamily: "'Noto Sans KR', sans-serif" }}>
                                     {assignment.assignmentName}
                                   </Typography>
-                                  <Tooltip title={getAssignmentDeadlineTooltip(assignment.deadlineDate)} arrow>
-                                    <Chip
-                                      size="small"
-                                      variant="outlined"
-                                      color={assignmentStatus.color}
-                                      label={(
-                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                                          {assignmentStatus.progress && <CircularProgress size={10} color="inherit" />}
-                                          {assignmentStatus.label}
-                                        </Box>
-                                      )}
-                                    />
-                                  </Tooltip>
+                                  <AssignmentStatusChip assignment={assignment} />
                                 </Box>
                                 <Button
                                   size="small"
