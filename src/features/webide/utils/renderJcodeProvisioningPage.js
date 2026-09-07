@@ -221,7 +221,7 @@ export const renderJcodeProvisioningPage = (
   });
   appendElement(document, content, 'p', {
     className: 'jcode-lead',
-    text: '개인 전용 Pod와 개발 도구를 안전하게 준비하고 있습니다.'
+    text: '개인 전용 컨테이너와 개발 도구를 안전하게 준비하고 있습니다.'
   });
 
   const status = appendElement(document, content, 'div', {
@@ -235,7 +235,7 @@ export const renderJcodeProvisioningPage = (
   const statusCopy = appendElement(document, status, 'div', { className: 'jcode-status__copy' });
   appendElement(document, statusCopy, 'strong', { text: '개인 작업공간 준비 중' });
   appendElement(document, statusCopy, 'span', {
-    text: 'Pod가 시작되고 개발 환경이 준비될 때까지 잠시만 기다려 주세요.'
+    text: '개인 전용 컨테이너가 시작되고 개발 환경이 준비될 때까지 잠시만 기다려 주세요.'
   });
   appendElement(document, content, 'div', {
     className: 'jcode-progress',
@@ -247,6 +247,6 @@ export const renderJcodeProvisioningPage = (
   });
   appendElement(document, content, 'p', {
     className: 'jcode-detail',
-    text: '준비가 완료되면 이 창에서 자동으로 JCode에 연결됩니다. 일반적으로 오래 걸리지 않습니다.'
+    text: '준비가 완료되면 이 창에서 자동으로 JCode에 연결됩니다.'
   });
 };

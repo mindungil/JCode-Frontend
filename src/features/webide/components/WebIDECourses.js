@@ -42,6 +42,11 @@ import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 import AssignmentStatusChip from '../../../components/common/AssignmentStatusChip';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
+import {
+  canCreateCourseForRole,
+  getCourseActionGridOrder,
+  getCourseGridOrder,
+} from '../utils/courseGridLayout';
 import { renderJcodeProvisioningPage } from '../utils/renderJcodeProvisioningPage';
 
 const sleep = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
@@ -65,9 +70,10 @@ const CourseActionTile = ({ icon, label, onClick }) => (
       flex: '1 1 0',
       minHeight: 0,
       overflow: 'hidden',
+      border: (theme) => `2px solid ${theme.palette.mode === 'dark' ? '#747B90' : '#A5ABB3'}`,
       transition: 'border-color 0.2s ease, background-color 0.2s ease',
       '&:hover': {
-        borderColor: (theme) => theme.palette.mode === 'dark' ? '#7B8196' : '#9AA0A8',
+        borderColor: (theme) => theme.palette.mode === 'dark' ? '#A3A9B8' : '#747B85',
         backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#30323F' : '#FAFAFA',
       },
     }}
@@ -123,7 +129,7 @@ const WebIDECourses = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [courseAssignments, setCourseAssignments] = useState({});
-  const canCreateCourse = ['PROFESSOR', 'ADMIN'].includes(user?.role);
+  const canCreateCourse = canCreateCourseForRole(user?.role);
   const handleToggleAssignments = async (courseId) => {
     if (expandedCourse === courseId) {
       setExpandedCourse(null);
@@ -516,8 +522,15 @@ const WebIDECourses = () => {
                   </Card>
                 </Grid>
               )}
-              {filteredCourses.map((course) => (
-                <Grid item xs={12} sm={6} md={4} key={course.courseId}>
+              {filteredCourses.map((course, courseIndex) => (
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                  md={4}
+                  key={course.courseId}
+                  sx={{ order: getCourseGridOrder(courseIndex) }}
+                >
                   <Card
                     sx={{
                       ...courseCardSx,
@@ -808,7 +821,13 @@ const WebIDECourses = () => {
                   </Card>
                 </Grid>
               ))}
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{ order: getCourseActionGridOrder(filteredCourses.length) }}
+              >
                 <Stack spacing={1.5} sx={{ height: BASE_COURSE_CARD_HEIGHT }}>
                   <CourseActionTile
                     icon={<GroupAddOutlinedIcon />}
