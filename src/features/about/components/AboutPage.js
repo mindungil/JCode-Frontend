@@ -42,7 +42,7 @@ import { keyframes } from '@mui/system';
 import CIcon from '../../../assets/icons/cprogramming.svg';
 import PythonIcon from '../../../assets/icons/python.svg';
 import CppIcon from '../../../assets/icons/c++.svg';
-import { announcements, teamGroups } from '../aboutContent';
+import { announcements, partnerUrls, teamGroups } from '../aboutContent';
 
 const AboutPage = () => {
   const theme = useTheme();
@@ -95,12 +95,12 @@ const AboutPage = () => {
   `;
 
   const partners = [
-    { name: <img src={jcloudLogo} alt="JCloud" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jcloud.jbnu.ac.kr' },
-    { name: <img src={litmusLogo} alt="Litmus" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://litmus.jbnu.ac.kr' },
+    { name: <img src={jcloudLogo} alt="JCloud" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: partnerUrls.jcloud },
+    { name: <img src={litmusLogo} alt="Litmus" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: partnerUrls.litmus },
     { name: <img src={swunivLogo} alt="SW중심대학" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://swuniv.jbnu.ac.kr' },
     { name: <img src={jbnuLogo} alt="JBNU" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://www.jbnu.ac.kr' },
     { name: <img src={jedutoolsLogo} alt="JEduTools Portal" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jedutools.jbnu.ac.kr' },
-    { name: <img src={jflowLogo} alt="JFlow" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: 'https://jflow.jbnu.ac.kr' },
+    { name: <img src={jflowLogo} alt="JFlow" style={{ height: '40px', width: '200px', objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'invert(1)' : 'none' }}/>, url: partnerUrls.jflow },
   ];
 
   const features = [

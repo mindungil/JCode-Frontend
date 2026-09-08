@@ -1,4 +1,12 @@
-import { announcements, teamGroups } from './aboutContent';
+import { announcements, partnerUrls, teamGroups } from './aboutContent';
+
+test('uses the current JEduTools service domains', () => {
+  expect(partnerUrls).toEqual({
+    jcloud: 'https://jcloud.jedutools.io',
+    litmus: 'https://litmus.jedutools.io',
+    jflow: 'https://jflow.jedutools.io',
+  });
+});
 
 test('keeps the v2 announcement as the latest notice', () => {
   expect(announcements[0]).toMatchObject({

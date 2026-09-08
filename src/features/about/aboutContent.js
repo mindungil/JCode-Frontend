@@ -1,3 +1,9 @@
+export const partnerUrls = {
+  jcloud: 'https://jcloud.jedutools.io',
+  litmus: 'https://litmus.jedutools.io',
+  jflow: 'https://jflow.jedutools.io',
+};
+
 export const teamGroups = [
   {
     year: '2026',
