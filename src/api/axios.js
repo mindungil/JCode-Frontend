@@ -18,14 +18,23 @@ const api = axios.create({
   withCredentials: true
 });
 
+const redirectToLogin = () => {
+  removeToken();
+
+  const { pathname } = window.location;
+  const isAuthRoute = pathname === '/' || pathname === '/login' || pathname.startsWith('/login/');
+  if (!isAuthRoute) {
+    window.location.replace('/login');
+  }
+};
+
 // 토큰 갱신 함수 (에러 처리 minimal - 토스트는 errorHandler에서 처리)
 const refreshToken = async () => {
   try {
     return await refreshTokenRequest();
   } catch (error) {
-    // 토큰 갱신 실패 시 즉시 로그아웃 (토스트는 errorHandler에서)
-    removeToken();
-    window.location.href = '/login';
+    // 공개 인증 화면에서는 현재 화면을 유지하고, 보호 화면에서만 한 번 이동한다.
+    redirectToLogin();
     throw error;
   }
 };

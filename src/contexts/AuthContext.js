@@ -29,12 +29,10 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         setUser(null);
         removeToken();
-        window.location.href = '/login';
       }
     } catch (error) {
       setUser(null);
       removeToken();
-      window.location.href = '/login';
     } finally {
       setLoading(false);
     }
