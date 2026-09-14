@@ -10,7 +10,7 @@ test('uses the current JEduTools service domains', () => {
 
 test('keeps the v2 announcement as the latest notice', () => {
   expect(announcements[0]).toMatchObject({
-    title: 'v2.0.0 업데이트 안내',
+    title: 'v2.0.1 업데이트 안내',
     date: '2026-09-07',
     isNew: true,
     content: '대규모 시스템 개편 및 신규 기능 추가',

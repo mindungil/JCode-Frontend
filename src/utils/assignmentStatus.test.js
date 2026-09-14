@@ -6,8 +6,41 @@ describe('getAssignmentStatus', () => {
     ['OPEN', '진행 중', 'success'],
     ['CLOSED', '마감', 'warning'],
   ])('maps %s schedule status to a visible chip', (scheduleStatus, label, color) => {
-    expect(getAssignmentStatus({ lifecycleStatus: 'ACTIVE', scheduleStatus }))
+    expect(getAssignmentStatus({
+      lifecycleStatus: 'ACTIVE',
+      scheduleStatus,
+      finalizedAt: scheduleStatus === 'CLOSED' ? '2026-09-10T13:31:00' : null,
+    }))
       .toEqual({ label, color, progress: false });
+  });
+
+  test('distinguishes final submission processing and failure from a completed deadline', () => {
+    expect(getAssignmentStatus({ lifecycleStatus: 'ACTIVE', scheduleStatus: 'CLOSED' }))
+      .toEqual({ label: '최종본 보관 중', color: 'info', progress: true });
+    expect(getAssignmentStatus({
+      lifecycleStatus: 'ACTIVE', scheduleStatus: 'CLOSED', lastError: 'safe error'
+    })).toEqual({ label: '보관 오류', color: 'error', progress: false });
+  });
+
+  test('surfaces starter distribution before the schedule state', () => {
+    expect(getAssignmentStatus({
+      lifecycleStatus: 'ACTIVE', scheduleStatus: 'OPEN', starterDistributionPending: true
+    })).toEqual({ label: '스타터 배포 중', color: 'info', progress: true });
+    expect(getAssignmentStatus({
+      lifecycleStatus: 'ACTIVE', scheduleStatus: 'OPEN', starterDistributionPending: true, lastError: 'safe error'
+    })).toEqual({ label: '스타터 배포 오류', color: 'error', progress: false });
+  });
+
+  test('uses the actual time boundary while the persisted scheduler state is stale', () => {
+    const assignment = {
+      lifecycleStatus: 'ACTIVE',
+      scheduleStatus: 'OPEN',
+      kickoffDate: '2026-09-13T10:00:00',
+      deadlineDate: '2026-09-13T11:00:00',
+    };
+
+    expect(getAssignmentStatus(assignment, new Date('2026-09-13T11:00:00')))
+      .toEqual({ label: '최종본 보관 중', color: 'info', progress: true });
   });
 
   test.each([

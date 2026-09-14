@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from '../../../api/axios';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getErrorMessage } from '../../../services/errorHandler';
-import { findAcceptedCourse } from '../../courses/utils/courseCreation';
+import { submitCourseCreation } from '../../../services/courseCreation';
 
 export const useClassList = () => {
   const { user } = useAuth();
@@ -48,9 +48,8 @@ export const useClassList = () => {
 
   // 새 강의 추가
   const addClass = useCallback(async (classData) => {
-    const knownCourseIds = new Set(classes.map(course => course.courseId));
     try {
-      const createResponse = await axios.post('/api/courses', {
+      const createResponse = await submitCourseCreation({
         name: classData.name,
         ...(classData.professor?.trim() ? { professor: classData.professor.trim() } : {}),
         year: classData.year,
@@ -71,29 +70,12 @@ export const useClassList = () => {
         status,
       };
     } catch (err) {
-      if (!err.response) {
-        try {
-          const latest = await axios.get(user?.role === 'ADMIN' ? '/api/courses' : '/api/users/me/courses');
-          const accepted = findAcceptedCourse(latest.data, knownCourseIds, classData);
-          if (accepted) {
-            void loadClasses(true);
-            return {
-              success: true,
-              courseId: accepted.courseId,
-              courseKey: null,
-              status: accepted.status,
-            };
-          }
-        } catch {
-          // 원래 요청 오류를 유지한다.
-        }
-      }
       return { 
         success: false, 
         error: getErrorMessage(err, '수업 생성 요청에 실패했습니다.')
       };
     }
-  }, [classes, loadClasses, user?.role]);
+  }, [loadClasses]);
 
   // 참가 코드 재발급
   const regenerateCourseKey = useCallback(async (courseId) => {

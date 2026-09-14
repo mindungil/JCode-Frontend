@@ -10,7 +10,6 @@ import api from '../../../../api/axios';
 import { useTheme } from '../../../../contexts/ThemeContext';
 import { toast } from 'react-toastify';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
-import { jcodeService } from '../../../../services/api';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import { getErrorMessage } from '../../../../services/errorHandler';
 import { useCourseData } from '../../hooks';
@@ -24,8 +23,6 @@ import EditAssignmentDialog from './dialogs/EditAssignmentDialog';
 import DeleteAssignmentDialog from './dialogs/DeleteAssignmentDialog';
 import PromoteStudentDialog from './dialogs/PromoteStudentDialog';
 import WithdrawUserDialog from './dialogs/WithdrawUserDialog';
-
-const wait = (milliseconds) => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 
 const ClassDetail = () => {
   const { courseId } = useParams();
@@ -187,26 +184,20 @@ const ClassDetail = () => {
     return response.data;
   }, [courseId]);
 
-  const waitForAssignmentReady = async (assignmentId) => {
-    const deadline = Date.now() + 3 * 60 * 1000;
-    while (Date.now() < deadline) {
-      const currentAssignments = await refreshAssignments();
-      const current = currentAssignments.find(item => item.assignmentId === assignmentId);
-      if (current?.lifecycleStatus === 'ACTIVE') return;
-      if (current?.lifecycleStatus === 'PROVISION_FAILED') {
-        throw new Error('과제 환경을 준비하지 못해 스타터 코드를 배포할 수 없습니다.');
-      }
-      await wait(2000);
-    }
-    throw new Error('과제 환경 준비가 지연되어 스타터 코드 업로드를 중단했습니다.');
-  };
-
   useEffect(() => {
     const transitional = new Set(['PROVISIONING', 'DELETING']);
-    if (!assignments.some(assignment => transitional.has(assignment.lifecycleStatus))) return undefined;
+    const scheduleCanChange = new Set(['SCHEDULED', 'OPEN']);
+    if (!assignments.some(assignment =>
+      transitional.has(assignment.lifecycleStatus) ||
+      (assignment.starterDistributionPending && !assignment.lastError) ||
+      (assignment.lifecycleStatus === 'ACTIVE' && scheduleCanChange.has(assignment.scheduleStatus))
+    )) return undefined;
     const timer = window.setInterval(() => {
       refreshAssignments().catch(() => undefined);
-    }, 3000);
+    }, assignments.some(assignment =>
+      transitional.has(assignment.lifecycleStatus) ||
+      (assignment.starterDistributionPending && !assignment.lastError)
+    ) ? 3000 : 15000);
     return () => window.clearInterval(timer);
   }, [assignments, refreshAssignments]);
 
@@ -242,21 +233,19 @@ const ClassDetail = () => {
 
       const response = await api.post(`/api/courses/${course.courseId}/assignments`, {
         ...assignmentData,
+        starterCodeExpected: Boolean(starterFile),
         kickoffDate: kickoffDateISO,
         deadlineDate: deadlineDateISO
       });
 
       toast.info('과제 생성을 요청했습니다. 환경 준비 상태가 자동으로 갱신됩니다.');
       // Generator 완료를 기다리지 않고 생성 창을 닫고, 목록 상태는 polling으로 갱신한다.
-      void refreshAssignments();
+      void refreshAssignments().catch(() => undefined);
 
       // 스타터 코드 업로드 (선택)
       if (starterFile && response.data?.assignmentId) {
         void (async () => {
           try {
-            if (response.data.lifecycleStatus !== 'ACTIVE') {
-              await waitForAssignmentReady(response.data.assignmentId);
-            }
             const formData = new FormData();
             formData.append('file', starterFile);
             await api.post(
@@ -266,13 +255,13 @@ const ClassDetail = () => {
             );
             await refreshAssignments();
           } catch (starterError) {
+            await refreshAssignments().catch(() => undefined);
             const reason = getErrorMessage(starterError, '잠시 후 다시 시도해주세요.');
             toast.warning(`과제는 생성되었지만 스타터 코드를 등록하지 못했습니다. ${reason}`);
           }
         })();
       }
     } catch (error) {
-      setError('과제 추가에 실패했습니다.');
       toast.error(getErrorMessage(error, '과제 생성 요청에 실패했습니다.'));
       throw error;
     }
@@ -280,6 +269,7 @@ const ClassDetail = () => {
 
   const handleEditAssignment = async (assignmentData) => {
     try {
+      const reopening = assignmentData.editMode === 'REOPEN';
       // 사용자 입력 시간을 Date 객체로 변환
       const kickoffDateInput = new Date(assignmentData.kickoffDate);
       const deadlineDateInput = new Date(assignmentData.deadlineDate);
@@ -305,20 +295,56 @@ const ClassDetail = () => {
         )
       ).toISOString();
       
-      await api.put(`/api/courses/${courseId}/assignments/${assignmentData.assignmentId}`, {
-        assignmentName: assignmentData.assignmentName,
-        assignmentDescription: assignmentData.assignmentDescription,
-        kickoffDate: kickoffDateISO,
-        deadlineDate: deadlineDateISO
-      });
+      if (reopening) {
+        await api.post(`/api/courses/${courseId}/assignments/${assignmentData.assignmentId}/reopen`, {
+          deadlineDate: deadlineDateISO
+        });
+      } else {
+        await api.put(`/api/courses/${courseId}/assignments/${assignmentData.assignmentId}`, {
+          assignmentName: assignmentData.assignmentName,
+          assignmentDescription: assignmentData.assignmentDescription,
+          kickoffDate: kickoffDateISO,
+          deadlineDate: deadlineDateISO,
+          archiveRetentionDays: assignmentData.archiveRetentionDays
+        });
+      }
 
       const assignmentsResponse = await api.get(`/api/courses/${courseId}/assignments`);
       setAssignments(assignmentsResponse.data);
       
-      toast.success('과제가 성공적으로 수정되었습니다.');
+      toast.success(reopening
+        ? '과제 다시 열기를 요청했습니다.'
+        : '과제가 성공적으로 수정되었습니다.');
     } catch (error) {
-      toast.error('과제 수정에 실패했습니다. 다시 시도해주세요.');
+      toast.error(getErrorMessage(error, '과제 변경 요청에 실패했습니다.'));
       throw error; // EditAssignmentDialog에서 오류를 처리할 수 있도록 다시 throw
+    }
+  };
+
+  const handleRetryAssignment = async (assignment) => {
+    try {
+      await api.post(`/api/courses/${courseId}/assignments/${assignment.assignmentId}/retry`);
+      await refreshAssignments();
+      toast.info('과제 환경 처리를 다시 요청했습니다.');
+    } catch (error) {
+      toast.error(getErrorMessage(error, '과제 환경 재시도 요청에 실패했습니다.'));
+    }
+  };
+
+  const handleRetryStarterUpload = async (assignment, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await api.post(
+        `/api/courses/${courseId}/assignments/${assignment.assignmentId}/starter-code`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      await refreshAssignments();
+      toast.info('스타터 코드 등록을 다시 요청했습니다.');
+    } catch (error) {
+      await refreshAssignments().catch(() => undefined);
+      toast.error(getErrorMessage(error, '스타터 코드 등록에 실패했습니다.'));
     }
   };
 
@@ -340,31 +366,6 @@ const ClassDetail = () => {
         courseId: course.courseId
       });
 
-      // 강의 권한이 수정될 시 스냅샷 컨테이너 생성/삭제 처리
-      if (selectedPromotingStudent.newRole !== 'STUDENT') {
-        try {
-          await jcodeService.createJCode(course.courseId, {
-            userEmail: selectedPromotingStudent.email,
-            snapshot: true
-          });
-          //console.log('강의 참가 후 JCode 생성 성공');
-        } catch (jcodeError) {
-          // 학생에서 권한이 상승 되는 경우가 아니면 이미 존재할 수 있음
-          // 따라서 403 에러는 무시
-        }
-      }
-      else {
-        try {
-          await jcodeService.deleteJCode(course.courseId, {
-            userEmail: selectedPromotingStudent.email,
-            snapshot: true
-          });
-        } catch (jcodeError) {
-          //console.error('JCode 삭제 중 오류:', jcodeError);
-          // JCode 삭제 실패 시에도 권한 변경은 계속 진행
-        }
-      }
-      
       const roleText = {
         'STUDENT': '학생',
         'ASSISTANT': '조교',
@@ -493,6 +494,8 @@ const ClassDetail = () => {
                 setDeletingAssignment(assignment);
                 setOpenDeleteDialog(true);
               }}
+              onRetryAssignment={handleRetryAssignment}
+              onRetryStarterUpload={handleRetryStarterUpload}
               userRole={userRole}
               courseId={courseId}
             />

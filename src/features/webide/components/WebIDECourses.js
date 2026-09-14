@@ -40,6 +40,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 import AssignmentStatusChip from '../../../components/common/AssignmentStatusChip';
+import { getEffectiveScheduleStatus } from '../../../utils/assignmentStatus';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
 import {
@@ -133,6 +134,20 @@ const WebIDECourses = () => {
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [courseAssignments, setCourseAssignments] = useState({});
   const canCreateCourse = canCreateCourseForRole(user?.role);
+  const refreshCourseAssignments = useCallback(async (courseId, showError = false) => {
+    try {
+      const assignments = await assignmentService.getCourseAssignments(courseId);
+      setCourseAssignments(prev => ({ ...prev, [courseId]: assignments }));
+      return assignments;
+    } catch (err) {
+      if (showError) {
+        setCourseAssignments(prev => ({ ...prev, [courseId]: [] }));
+        toast.error(getErrorMessage(err, '과제 목록을 불러오지 못했습니다.'));
+      }
+      return null;
+    }
+  }, []);
+
   const handleToggleAssignments = async (courseId) => {
     if (expandedCourse === courseId) {
       setExpandedCourse(null);
@@ -140,13 +155,7 @@ const WebIDECourses = () => {
     }
     setExpandedCourse(courseId);
     if (!courseAssignments[courseId]) {
-      try {
-        const assignments = await assignmentService.getCourseAssignments(courseId);
-        setCourseAssignments(prev => ({ ...prev, [courseId]: assignments }));
-      } catch (err) {
-        setCourseAssignments(prev => ({ ...prev, [courseId]: [] }));
-        toast.error(getErrorMessage(err, '과제 목록을 불러오지 못했습니다.'));
-      }
+      await refreshCourseAssignments(courseId, true);
     }
   };
 
@@ -203,6 +212,29 @@ const WebIDECourses = () => {
     return () => window.clearInterval(timer);
   }, [courses, fetchCourses]);
 
+  useEffect(() => {
+    if (!expandedCourse) return undefined;
+    const assignments = courseAssignments[expandedCourse];
+    if (!assignments) return undefined;
+    const transitional = assignments.some(assignment => (
+      ['PROVISIONING', 'DELETING'].includes(assignment.lifecycleStatus) ||
+      assignment.starterDistributionPending ||
+      (assignment.lifecycleStatus === 'ACTIVE' &&
+        getEffectiveScheduleStatus(assignment) === 'CLOSED' &&
+        !assignment.finalizedAt)
+    ));
+    const scheduleCanChange = assignments.some(assignment => (
+      assignment.lifecycleStatus === 'ACTIVE' &&
+      ['SCHEDULED', 'OPEN'].includes(getEffectiveScheduleStatus(assignment))
+    ));
+    if (!transitional && !scheduleCanChange) return undefined;
+    const timer = window.setInterval(
+      () => refreshCourseAssignments(expandedCourse),
+      transitional ? 3000 : 15000
+    );
+    return () => window.clearInterval(timer);
+  }, [courseAssignments, expandedCourse, refreshCourseAssignments]);
+
   const waitForJcodeReady = async (jcodeId) => {
     const deadline = Date.now() + JCODE_READY_TIMEOUT_MS;
     let consecutiveFailures = 0;
@@ -211,6 +243,8 @@ const WebIDECourses = () => {
         const jcodes = await userService.getMyJCodes({ showToast: false });
         const current = jcodes.find(jcode => String(jcode.jcodeId) === String(jcodeId));
         consecutiveFailures = 0;
+        // READY rows are verified against the live workload by the Redirect API. A stale
+        // observed failure may already have an idempotent repair in progress.
         if (current?.status === 'READY') return;
         if (current?.status === 'PROVISION_FAILED') {
           throw new Error('JCode 환경을 준비하지 못했습니다. 관리자에게 문의해주세요.');
@@ -230,20 +264,27 @@ const WebIDECourses = () => {
     throw new Error('JCode 준비 시간이 길어지고 있습니다. 잠시 후 다시 시도해주세요.');
   };
 
-  const getJcodeRedirect = async (redirectData, jcodeId) => {
+  const getJcodeRedirect = async (redirectData) => {
     let lastError;
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    const deadline = Date.now() + JCODE_READY_TIMEOUT_MS;
+    const retryableCodes = new Set([
+      'JCODE_PREPARING',
+      'JCODE_POLICY_APPLYING',
+      'JCODE_RECOVERY_REQUIRED',
+      'JCODE_RUNTIME_UNAVAILABLE'
+    ]);
+    while (Date.now() < deadline) {
       try {
         return await redirectService.redirectToJCode(redirectData);
       } catch (error) {
         lastError = error;
         const status = error.response?.status;
-        if (status === 409 && jcodeId) {
-          await waitForJcodeReady(jcodeId);
+        const code = error.response?.data?.code;
+        if (retryableCodes.has(code) || (!status && error.request)) {
+          await sleep(2000);
           continue;
         }
-        if (status && status !== 409 && status < 500) throw error;
-        if (attempt < 4) await sleep(1500);
+        throw error;
       }
     }
     throw lastError;
@@ -278,7 +319,7 @@ const WebIDECourses = () => {
         courseId: courseId,
         snapshot: isSnapshot,
         ...(assignmentId && { assignmentId })
-      }, jcode.jcodeId);
+      });
 
       if (redirectData?.url) {
         ideWindow.location.replace(redirectData.url);
@@ -756,7 +797,10 @@ const WebIDECourses = () => {
                             {courseAssignments[course.courseId]
                               .filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED')
                               .map((assignment) => {
-                              const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' && assignment.scheduleStatus === 'OPEN';
+                              const studentCourse = course.courseRole === 'STUDENT';
+                              const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' &&
+                                getEffectiveScheduleStatus(assignment) === 'OPEN' &&
+                                !assignment.starterDistributionPending;
                               return (
                               <Box
                                 key={assignment.assignmentId}
@@ -793,7 +837,7 @@ const WebIDECourses = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center', height: 24 }}>
                                   <AssignmentStatusChip assignment={assignment} />
                                 </Box>
-                                <Button
+                                {studentCourse && <Button
                                   size="small"
                                   variant="outlined"
                                   startIcon={<CodeIcon sx={{ fontSize: '0.8rem' }} />}
@@ -817,7 +861,7 @@ const WebIDECourses = () => {
                                   }}
                                 >
                                   IDE 열기
-                                </Button>
+                                </Button>}
                               </Box>
                               );
                             })}
@@ -913,10 +957,10 @@ const WebIDECourses = () => {
                 ⚠️ 주의: 강의 탈퇴 시 다음 사항을 확인해주세요
               </Typography>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                • 모든 강의 데이터와 제출물이 삭제됩니다.
+                • 강의 작업 공간과 제출물에 더 이상 접근할 수 없습니다.
               </Typography>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                • 삭제된 데이터는 복구가 불가능합니다.
+                • 데이터는 서버 보관 정책에 따라 일정 기간 후 영구 삭제될 수 있습니다.
               </Typography>
               <Typography variant="body2" sx={{ mb: 3 }}>
                 • 재참가 시 새로운 참가 코드가 필요합니다.

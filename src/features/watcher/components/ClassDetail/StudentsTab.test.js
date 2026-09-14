@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import api from '../../../../api/axios';
 import StudentsTab from './StudentsTab';
 
@@ -11,18 +11,13 @@ jest.mock('react-toastify', () => ({
   toast: { error: jest.fn() },
 }));
 
-describe('StudentsTab JCode connection', () => {
+describe('StudentsTab JCode privacy boundary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     window.open = jest.fn();
   });
 
-  test('opens the JCode URL returned in the response body', async () => {
-    api.post.mockResolvedValue({
-      request: { responseURL: 'https://jcode.jedutools.io/api/redirect' },
-      data: { url: 'https://jcode.jedutools.io/jcode/session-id/' },
-    });
-
+  test('does not expose a course-wide student workspace action', () => {
     render(
       <StudentsTab
         students={[{
@@ -43,17 +38,7 @@ describe('StudentsTab JCode connection', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'JCode' }));
-
-    await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/api/redirect', {
-        userEmail: 'student@example.com',
-        courseId: 60,
-      }, { withCredentials: true });
-      expect(window.open).toHaveBeenCalledWith(
-        'https://jcode.jedutools.io/jcode/session-id/',
-        '_blank'
-      );
-    });
+    expect(screen.queryByRole('button', { name: 'JCode' })).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
   });
 });

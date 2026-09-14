@@ -31,8 +31,17 @@ import {
 import { sortByName, sortByStudentNum, sortByChanges, createStringSort } from '../../../../utils/sortHelpers';
 import { LoadingSpinner, GlassPaper } from '../../../../components/ui';
 import { canViewCourseStudents, getCourseRole, getMemberCourseRole } from '../../utils/coursePermissions';
+import { renderJcodeProvisioningPage } from '../../../webide/utils/renderJcodeProvisioningPage';
+import { getErrorMessage } from '../../../../services/errorHandler';
 
-
+const INSPECTOR_READY_ATTEMPTS = 120;
+const INSPECTOR_RETRYABLE_CODES = new Set([
+  'JCODE_PREPARING',
+  'JCODE_POLICY_APPLYING',
+  'JCODE_RECOVERY_REQUIRED',
+  'JCODE_RUNTIME_UNAVAILABLE',
+  'MEMBERSHIP_PREPARING'
+]);
 
 const AssignmentDetail = () => {
   const { courseId, assignmentId } = useParams();
@@ -399,23 +408,39 @@ const AssignmentDetail = () => {
 
   // JCode 리다이렉션 핸들러 수정
   const handleJCodeRedirect = async (student) => {
+    if (!student || !student.email) {
+      toast.error('학생 정보가 불완전합니다. 이메일이 필요합니다.');
+      return;
+    }
+    const ideWindow = window.open('about:blank', '_blank');
+    if (!ideWindow) {
+      toast.error('새 창이 차단되었습니다. 브라우저의 팝업 허용 설정을 확인해주세요.');
+      return;
+    }
+    ideWindow.opener = null;
+    renderJcodeProvisioningPage(ideWindow, {
+      isDarkMode,
+      assetOrigin: window.location.origin
+    });
     try {
-      if (!student || !student.email) {
-        //console.error('학생 이메일 정보가 없어 JCode로 이동할 수 없습니다.');
-        toast.error('학생 정보가 불완전합니다. 이메일이 필요합니다.');
-        return;
+      for (let attempt = 0; attempt < INSPECTOR_READY_ATTEMPTS; attempt += 1) {
+        if (ideWindow.closed) return;
+        try {
+          const finalUrl = await redirectToJCode(student.email, courseId, assignmentId);
+          if (!finalUrl) throw new Error('리다이렉트 URL을 찾을 수 없습니다');
+          ideWindow.location.replace(finalUrl);
+          return;
+        } catch (error) {
+          const errorCode = error.response?.data?.code;
+          if (!INSPECTOR_RETRYABLE_CODES.has(errorCode) ||
+              attempt === INSPECTOR_READY_ATTEMPTS - 1) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
       }
-
-      const finalUrl = await redirectToJCode(student.email, courseId, assignmentId);
-      
-      if (!finalUrl) {
-        throw new Error("리다이렉트 URL을 찾을 수 없습니다");
-      }
-      
-      window.open(finalUrl, '_blank');
     } catch (err) {
+      if (!ideWindow.closed) ideWindow.close();
       //console.error('JCode 리다이렉트 오류:', err);
-      toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
+      toast.error(getErrorMessage(err, 'Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'), {
         icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
         style: {
           background: isDarkMode ? '#d32f2f' : '#f44336',

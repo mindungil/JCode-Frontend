@@ -29,7 +29,7 @@ export const teamGroups = [
 export const announcements = [
   {
     id: 4,
-    title: 'v2.0.0 업데이트 안내',
+    title: 'v2.0.1 업데이트 안내',
     date: '2026-09-07',
     isNew: true,
     type: 'update',

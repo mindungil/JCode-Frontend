@@ -12,11 +12,35 @@ const SCHEDULE_STATUS = {
   ARCHIVED: { label: '보관 완료', color: 'default', progress: false },
 };
 
-export const getAssignmentStatus = (assignment = {}) => {
+export const getEffectiveScheduleStatus = (assignment = {}, now = new Date()) => {
+  const kickoff = new Date(assignment.kickoffDate);
+  const deadline = new Date(assignment.deadlineDate);
+  const current = now instanceof Date ? now : new Date(now);
+  if ([kickoff, deadline, current].some(value => Number.isNaN(value.getTime()))) {
+    return assignment.scheduleStatus;
+  }
+  if (current >= deadline) return 'CLOSED';
+  if (current < kickoff) return 'SCHEDULED';
+  return 'OPEN';
+};
+
+export const getAssignmentStatus = (assignment = {}, now = new Date()) => {
   const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
   if (LIFECYCLE_STATUS[lifecycle]) return LIFECYCLE_STATUS[lifecycle];
+  if (assignment.starterDistributionPending) {
+    return assignment.lastError
+      ? { label: '스타터 배포 오류', color: 'error', progress: false }
+      : { label: '스타터 배포 중', color: 'info', progress: true };
+  }
+  const scheduleStatus = getEffectiveScheduleStatus(assignment, now);
 
-  return SCHEDULE_STATUS[assignment.scheduleStatus]
+  if (scheduleStatus === 'CLOSED' && !assignment.finalizedAt) {
+    return assignment.lastError
+      ? { label: '보관 오류', color: 'error', progress: false }
+      : { label: '최종본 보관 중', color: 'info', progress: true };
+  }
+
+  return SCHEDULE_STATUS[scheduleStatus]
     || { label: '상태 확인 필요', color: 'default', progress: false };
 };
 

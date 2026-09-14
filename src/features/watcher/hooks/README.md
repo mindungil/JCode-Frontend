@@ -5,7 +5,7 @@
 ## 훅 목록
 
 ### 1. useStudentManagement
-학생 목록 관리, 정렬, 필터링, JCode/Watcher 리다이렉트 기능을 제공합니다.
+학생 목록 관리, 정렬, 필터링, Watcher 리다이렉트 기능을 제공합니다.
 
 ```javascript
 import { useStudentManagement } from '../hooks';
@@ -17,7 +17,6 @@ const {
   studentCount,
   setSearchQuery,
   toggleSort,
-  handleJCodeRedirect,
   handleWatcherRedirect,
   clearSearch,
   resetSort
@@ -32,7 +31,7 @@ const {
 **주요 기능:**
 - 학생 검색 및 필터링
 - 이름, 이메일, 학번 기준 정렬
-- JCode/Watcher 리다이렉트
+- Watcher 리다이렉트
 
 ### 2. useAssignmentData
 과제 정보 로딩 및 관리 기능을 제공합니다.
@@ -343,4 +342,4 @@ const AssignmentMonitoring = ({ courseId, assignmentId }) => {
 - `fetchLogAverage`: 로그 평균 데이터
 - `fetchSnapshotAverage`: 스냅샷 평균 데이터
 
-이러한 함수들이 구현되면 `useLogData` 훅의 전체 기능을 사용할 수 있습니다. 
+이러한 함수들이 구현되면 `useLogData` 훅의 전체 기능을 사용할 수 있습니다.

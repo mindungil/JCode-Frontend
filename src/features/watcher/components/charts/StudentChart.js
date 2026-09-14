@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Paper, Typography, Box, useTheme } from '@mui/material';
-import StudentSelector from './StudentSelector';
 import { cleanupChartInstance } from './api';
 import { useAuth } from '../../../../contexts/AuthContext';
 import api from '../../../../api/axios';
@@ -15,10 +14,13 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
   const isDarkMode = theme.palette.mode === 'dark';
   const chartRef = useRef(null);
   const plotlyInstance = useRef(null);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
+  const onStudentClickRef = useRef(onStudentClick);
   const [processedData, setProcessedData] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    onStudentClickRef.current = onStudentClick;
+  }, [onStudentClick]);
   
   // 관리자/교수/조교 여부 확인
   const isAdmin = userRole === 'ADMIN';
@@ -502,7 +504,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
           });
           
           // 관리자/교수/조교인 경우에만 클릭 이벤트 추가
-          if (canViewStudentDetails) {
+          if (canViewStudentDetails && typeof onStudentClickRef.current === 'function') {
             // 차트 클릭 이벤트 처리
             studentChartElement.on('plotly_click', function(data) {
               if (data.points && data.points.length > 0) {
@@ -542,25 +544,7 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
                     
                     //console.log('선택된 학생 정보:', studentInfo);
                     
-                    // 부모 컴포넌트에서 onStudentClick 함수가 제공된 경우
-                    if (onStudentClick) {
-                      //console.log('부모 컴포넌트의 onStudentClick 함수 호출');
-                      
-                      // 함수가 함수인지 확인 (객체가 아님)
-                      if (typeof onStudentClick === 'function') {
-                        // 학생 정보를 부모 컴포넌트에 전달
-                        onStudentClick(studentInfo);
-                      } else {
-                        //console.error('onStudentClick이 함수가 아닙니다:', onStudentClick);
-                        // 내부 다이얼로그로 폴백
-                        setSelectedStudent(studentInfo);
-                        setOpenDialog(true);
-                      }
-                    } else {
-                      // 부모 컴포넌트가 없는 경우 내부 다이얼로그 표시
-                      setSelectedStudent(studentInfo);
-                      setOpenDialog(true);
-                    }
+                    onStudentClickRef.current(studentInfo);
                   } else {
                     //console.error('해당 학번에 일치하는 학생을 찾을 수 없습니다:', studentNum);
                   }
@@ -596,80 +580,11 @@ const StudentChart = ({ data, searchQuery, userRole, onStudentClick }) => {
     };
   }, [data, searchQuery, isDarkMode, userRole, canViewStudentDetails, processedData]);
 
-  // 다이얼로그 닫기 핸들러
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedStudent(null);
-  };
-
-  // JCode 이동 핸들러
-  const handleJCodeRedirect = (student) => {
-    //console.log('JCode로 이동:', student);
-    if (onStudentClick && typeof onStudentClick.onJCodeRedirect === 'function') {
-      onStudentClick.onJCodeRedirect(student);
-    } else {
-      // 폴백 구현
-      if (student.email) {
-        window.open(`/api/redirect?userEmail=${student.email}`, '_blank');
-      } else {
-        //console.error('학생 이메일 정보가 없어 JCode로 이동할 수 없습니다.');
-      }
-    }
-  };
-
-  // Watcher 이동 핸들러
-  const handleWatcherRedirect = (student) => {
-    //console.log('Watcher로 이동:', student);
-    if (onStudentClick && typeof onStudentClick.onWatcherRedirect === 'function') {
-      onStudentClick.onWatcherRedirect(student);
-    } else {
-      // 폴백 구현 (기존 로직 유지)
-      if (student.userId) {
-        // URL에서 courseId와 assignmentId를 추출
-        const urlParams = new URL(window.location.href);
-        const pathParts = urlParams.pathname.split('/');
-        
-        // URL 경로에서 courseId와 assignmentId 찾기
-        let courseId, assignmentId;
-        for (let i = 0; i < pathParts.length; i++) {
-          if (pathParts[i] === 'class' && i + 1 < pathParts.length) {
-            courseId = pathParts[i + 1];
-          } else if (pathParts[i] === 'assignment' && i + 1 < pathParts.length) {
-            assignmentId = pathParts[i + 1];
-          }
-        }
-        
-        if (courseId && assignmentId) {
-          const watcherUrl = `/watcher/class/${courseId}/assignment/${assignmentId}/monitoring/${student.userId}`;
-          //console.log('이동할 Watcher URL:', watcherUrl);
-          window.open(watcherUrl, '_blank');
-        } else {
-          // URL에서 코스 ID와 과제 ID를 가져올 수 없는 경우
-          //console.error('현재 URL에서 courseId와 assignmentId를 찾을 수 없습니다:', window.location.href);
-          //console.log('대체 URL로 이동 시도');
-          window.open(`/watcher/student/${student.userId}`, '_blank');
-        }
-      } else {
-        //console.error('학생 ID 정보가 없어 Watcher로 이동할 수 없습니다.');
-      }
-    }
-  };
-
   //console.log('차트 렌더링: 데이터 있음, 차트 표시');
   return (
     <Paper elevation={0} sx={{ p: 3, mb: 1, borderRadius: 2, backgroundColor: 'transparent', boxShadow: 'none' }}>
       <div id="studentChart" style={{ width: '100%', height: '600px' }} ref={chartRef}></div>
       
-      {/* 관리자/교수/조교인 경우에만 StudentSelector 다이얼로그 표시 */}
-      {canViewStudentDetails && !onStudentClick && (
-        <StudentSelector 
-          open={openDialog}
-          onClose={handleCloseDialog}
-          student={selectedStudent}
-          onJCodeRedirect={handleJCodeRedirect}
-          onWatcherRedirect={handleWatcherRedirect}
-        />
-      )}
     </Paper>
   );
 };

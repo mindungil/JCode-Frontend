@@ -4,6 +4,8 @@ import {
   apiPut, 
   apiDelete
 } from '../apiHelpers';
+import { submitCourseCreation } from '../courseCreation';
+import { handleApiResponse } from '../errorHandler';
 
 /**
  * 관리자 관련 API 서비스
@@ -128,7 +130,7 @@ const adminService = {
       throw new Error(`필수 필드가 누락되었습니다: ${missingFields.join(', ')}`);
     }
 
-    return apiPost('/api/courses', courseData, {
+    return handleApiResponse(() => submitCourseCreation(courseData), {
       customErrorMessage: '강의 생성에 실패했습니다.',
       ...options
     });

@@ -20,11 +20,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import PeopleIcon from '@mui/icons-material/People';
-import CodeIcon from '@mui/icons-material/Code';
-import ErrorIcon from '@mui/icons-material/Error';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
-import api from '../../../../api/axios';
-import { toast } from 'react-toastify';
 // GlassPaper 중복 적용을 피하기 위해 이 탭 내부에서는 사용하지 않음
 
 /**
@@ -39,9 +35,7 @@ const StudentsTab = ({
   onToggleSort,
   onWithdrawUser,
   onPromoteStudent,
-  userRole,
-  courseId,
-  isDarkMode
+  userRole
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -64,47 +58,6 @@ const StudentsTab = ({
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, students.length]);
-
-  // JCode 연결 처리
-  const handleJCodeConnect = async (student) => {
-    try {
-      // API 요청으로 리다이렉트 URL 가져오기
-      const response = await api.post('/api/redirect', {
-        userEmail: student.email,
-        courseId: courseId
-      }, { withCredentials: true });
-      
-      // responseURL is the API endpoint itself; the backend returns the JCode target in JSON.
-      const finalUrl = response.data?.url;
-      
-      if (!finalUrl) {
-        throw new Error("리다이렉트 URL을 찾을 수 없습니다");
-      }
-      
-      // 새 탭에서 URL 열기
-      window.open(finalUrl, '_blank');
-      
-    } catch (err) {
-      // 에러 처리
-      toast.error('Web-IDE 연결에 실패했습니다. 잠시 후 다시 시도해주세요.', {
-        icon: ({theme, type}) => <ErrorIcon sx={{ color: '#fff', fontSize: '1.5rem', mr: 1 }}/>,
-        style: {
-          background: isDarkMode ? '#d32f2f' : '#f44336',
-          color: '#fff',
-          fontFamily: "'JetBrains Mono', 'Noto Sans KR', sans-serif",
-          borderRadius: '8px',
-          fontSize: '0.95rem',
-          padding: '12px 20px',
-          maxWidth: '500px',
-          width: 'auto',
-          textOverflow: 'ellipsis',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center'
-        }
-      });
-    }
-  };
 
   return (
     <Fade in={true} timeout={300}>
@@ -337,25 +290,6 @@ const StudentsTab = ({
                           </Button>
                         )}
                         
-                        {(userRole === 'PROFESSOR' || userRole === 'ADMIN' || userRole === 'ASSISTANT') && (
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<CodeIcon sx={{ fontSize: '1rem' }} />}
-                            onClick={() => handleJCodeConnect(student)}
-                            sx={{ 
-                              fontFamily: FONT_FAMILY,
-                              fontSize: '0.75rem',
-                              py: 0.5,
-                              px: 1.5,
-                              minHeight: '28px',
-                              borderRadius: '14px',
-                              textTransform: 'none'
-                            }}
-                          >
-                            JCode
-                          </Button>
-                        )}
                       </Stack>
                     </TableCell>
                   </TableRow>

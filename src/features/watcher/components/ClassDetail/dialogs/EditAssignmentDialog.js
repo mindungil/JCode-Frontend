@@ -6,9 +6,7 @@ import {
   DialogActions,
   TextField,
   Button,
-  Grid,
-  Box,
-  Typography
+  Grid
 } from '@mui/material';
 import { FONT_FAMILY } from '../../../../../constants/uiConstants';
 import { GlassPaper } from '../../../../../components/ui';
@@ -25,6 +23,7 @@ const EditAssignmentDialog = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState(null);
+  const reopenMode = assignment?.editMode === 'REOPEN';
 
   // assignment가 변경될 때마다 editingAssignment 업데이트
   useEffect(() => {
@@ -69,6 +68,10 @@ const EditAssignmentDialog = ({
   const isFormValid = () => {
     if (!editingAssignment) return false;
 
+    if (reopenMode) {
+      return editingAssignment.deadlineDate &&
+        new Date(editingAssignment.deadlineDate) > new Date();
+    }
     return (
       editingAssignment.assignmentName?.trim() &&
       editingAssignment.kickoffDate &&
@@ -99,28 +102,17 @@ const EditAssignmentDialog = ({
           py: 3
         }}
       >
-        과제 수정
+        {reopenMode ? '과제 다시 열기' : '과제 수정'}
       </DialogTitle>
 
       <DialogContent>
-        {editingAssignment?.dirName && (
-          <Box sx={{ mb: 3, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Typography sx={{
-              fontFamily: FONT_FAMILY,
-              fontSize: '0.875rem',
-              color: 'text.secondary'
-            }}>
-              디렉토리명: <strong>{editingAssignment.dirName}</strong> (변경 불가)
-            </Typography>
-          </Box>
-        )}
-
         <Grid container spacing={3} sx={{ mt: 1 }}>
           <Grid item xs={12}>
             <TextField
               fullWidth
               label="과제명"
               value={editingAssignment?.assignmentName || ''}
+              disabled={reopenMode}
               onChange={(e) => setEditingAssignment({
                 ...editingAssignment,
                 assignmentName: e.target.value
@@ -143,6 +135,7 @@ const EditAssignmentDialog = ({
               fullWidth
               label="과제 설명 (선택)"
               value={editingAssignment?.assignmentDescription || ''}
+              disabled={reopenMode}
               onChange={(e) => setEditingAssignment({
                 ...editingAssignment,
                 assignmentDescription: e.target.value
@@ -159,6 +152,7 @@ const EditAssignmentDialog = ({
               label="시작 일시"
               type="datetime-local"
               value={editingAssignment?.kickoffDate || ''}
+              disabled={reopenMode}
               onChange={(e) => setEditingAssignment({
                 ...editingAssignment,
                 kickoffDate: e.target.value
@@ -206,15 +200,19 @@ const EditAssignmentDialog = ({
               }}
               error={
                 (!editingAssignment?.deadlineDate) ||
-                (editingAssignment?.kickoffDate && editingAssignment?.deadlineDate &&
-                new Date(editingAssignment.kickoffDate) >= new Date(editingAssignment.deadlineDate))
+                (reopenMode
+                  ? new Date(editingAssignment?.deadlineDate) <= new Date()
+                  : (editingAssignment?.kickoffDate && editingAssignment?.deadlineDate &&
+                    new Date(editingAssignment.kickoffDate) >= new Date(editingAssignment.deadlineDate)))
               }
               helperText={
                 !editingAssignment?.deadlineDate ?
                   "마감 일시를 선택해주세요" :
-                  (editingAssignment?.kickoffDate && editingAssignment?.deadlineDate &&
-                  new Date(editingAssignment.kickoffDate) >= new Date(editingAssignment.deadlineDate) ?
-                  "마감일시는 시작일시보다 나중이어야 합니다" : "")
+                  (reopenMode && new Date(editingAssignment.deadlineDate) <= new Date() ?
+                    "새 마감일시는 현재보다 나중이어야 합니다" :
+                    (editingAssignment?.kickoffDate && editingAssignment?.deadlineDate &&
+                    new Date(editingAssignment.kickoffDate) >= new Date(editingAssignment.deadlineDate) ?
+                    "마감일시는 시작일시보다 나중이어야 합니다" : ""))
               }
               sx={{
                 '& .MuiInputBase-root': {
@@ -258,7 +256,7 @@ const EditAssignmentDialog = ({
             textTransform: 'none'
           }}
         >
-          수정
+          {reopenMode ? '다시 열기' : '수정'}
         </Button>
       </DialogActions>
     </Dialog>

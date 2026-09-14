@@ -17,9 +17,12 @@ import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { FONT_FAMILY } from '../../../../constants/uiConstants';
 import AssignmentStatusChip from '../../../../components/common/AssignmentStatusChip';
 import RemainingTime from '../common/RemainingTime';
+import { getEffectiveScheduleStatus } from '../../../../utils/assignmentStatus';
 
 /**
  * 과제 목록 탭 컴포넌트
@@ -30,6 +33,8 @@ const AssignmentsTab = ({
   onAddAssignment,
   onEditAssignment,
   onDeleteAssignment,
+  onRetryAssignment,
+  onRetryStarterUpload,
   userRole,
   courseId
 }) => {
@@ -55,6 +60,7 @@ const AssignmentsTab = ({
   const handleEditClick = (assignment) => {
     const formattedAssignment = {
       ...assignment,
+      editMode: getEffectiveScheduleStatus(assignment) === 'CLOSED' ? 'REOPEN' : 'UPDATE',
       originalAssignmentName: assignment.assignmentName,
       kickoffDate: formatToLocalDateTimeString(assignment.kickoffDate),
       deadlineDate: formatToLocalDateTimeString(assignment.deadlineDate)
@@ -103,12 +109,22 @@ const AssignmentsTab = ({
             <TableBody>
               {visibleAssignments.map((assignment) => {
                 const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
-                const canManage = lifecycle === 'ACTIVE';
+                const scheduleStatus = getEffectiveScheduleStatus(assignment);
+                const canOpen = lifecycle === 'ACTIVE';
+                const canEdit = lifecycle === 'ACTIVE' && scheduleStatus !== 'CLOSED';
+                const canReopen = lifecycle === 'ACTIVE' &&
+                  scheduleStatus === 'CLOSED' && Boolean(assignment.finalizedAt);
+                const needsStarterUpload = lifecycle === 'ACTIVE' &&
+                  assignment.starterDistributionPending &&
+                  !assignment.hasStarterCode &&
+                  Boolean(assignment.lastError);
+                const canRetry = lifecycle === 'PROVISION_FAILED' ||
+                  (Boolean(assignment.lastError) && !needsStarterUpload);
                 return (
                 <TableRow 
                   key={assignment.assignmentId}
                   sx={{ 
-                    cursor: canManage ? 'pointer' : 'default',
+                    cursor: canOpen ? 'pointer' : 'default',
                     '&:hover': {
                       backgroundColor: (theme) => 
                         theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
@@ -175,8 +191,7 @@ const AssignmentsTab = ({
                   {userRole !== 'STUDENT' && (
                     <TableCell>
                       <Stack direction="row" spacing={1}>
-                        {canManage && <>
-                        <Tooltip title="과제 수정">
+                        {(canEdit || canReopen) && <Tooltip title={canReopen ? '과제 다시 열기' : '과제 수정'}>
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
@@ -194,6 +209,35 @@ const AssignmentsTab = ({
                           <EditIcon fontSize="small" />
                         </IconButton>
                         </Tooltip>
+                        }
+                        {canRetry && <Tooltip title="과제 환경 처리 재시도">
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRetryAssignment(assignment);
+                            }}
+                            size="small"
+                            color="warning"
+                          >
+                            <RestartAltIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>}
+                        {needsStarterUpload && <Tooltip title="스타터 코드 다시 업로드">
+                          <IconButton component="label" size="small" color="warning">
+                            <UploadFileIcon fontSize="small" />
+                            <input
+                              type="file"
+                              accept=".zip"
+                              hidden
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                event.target.value = '';
+                                if (file) onRetryStarterUpload(assignment, file);
+                              }}
+                            />
+                          </IconButton>
+                        </Tooltip>}
+                        {lifecycle === 'ACTIVE' && <>
                         <Tooltip title="과제 보관">
                         <IconButton
                           onClick={(e) => {
