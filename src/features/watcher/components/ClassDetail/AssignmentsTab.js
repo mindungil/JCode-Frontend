@@ -39,7 +39,10 @@ const AssignmentsTab = ({
   courseId
 }) => {
   const navigate = useNavigate();
-  const visibleAssignments = assignments.filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED');
+  // 보관된 과제도 목록에 노출한다. 열람(Watcher 분석)은 보관 상태에서도 가능해야 하며,
+  // 편집/재개 등 운영 동작은 아래 canEdit/canReopen 등에서 계속 차단된다.
+  const VIEWABLE_LIFECYCLES = ['ACTIVE', 'ARCHIVED'];
+  const visibleAssignments = assignments;
 
   // 날짜 형식 변환 함수
   const formatToLocalDateTimeString = (dateString) => {
@@ -70,7 +73,7 @@ const AssignmentsTab = ({
 
   // 과제 행 클릭 핸들러
   const handleRowClick = (assignment) => {
-    if (assignment.lifecycleStatus && assignment.lifecycleStatus !== 'ACTIVE') return;
+    if (assignment.lifecycleStatus && !VIEWABLE_LIFECYCLES.includes(assignment.lifecycleStatus)) return;
     navigate(`/watcher/class/${courseId}/assignment/${assignment.assignmentId}`);
   };
 
@@ -110,7 +113,7 @@ const AssignmentsTab = ({
               {visibleAssignments.map((assignment) => {
                 const lifecycle = assignment.lifecycleStatus || 'ACTIVE';
                 const scheduleStatus = getEffectiveScheduleStatus(assignment);
-                const canOpen = lifecycle === 'ACTIVE';
+                const canOpen = VIEWABLE_LIFECYCLES.includes(lifecycle);
                 const canEdit = lifecycle === 'ACTIVE' && scheduleStatus !== 'CLOSED';
                 const canReopen = lifecycle === 'ACTIVE' &&
                   scheduleStatus === 'CLOSED' && Boolean(assignment.finalizedAt);
