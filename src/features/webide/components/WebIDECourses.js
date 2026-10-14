@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { userService, jcodeService, redirectService, assignmentService } from '../../../services/api';
 import CodeIcon from '@mui/icons-material/Code';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { selectStyles } from '../../../styles/selectStyles';
@@ -40,7 +41,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { LoadingSpinner, GlassPaper } from '../../../components/ui';
 import AssignmentStatusChip from '../../../components/common/AssignmentStatusChip';
-import { getEffectiveScheduleStatus } from '../../../utils/assignmentStatus';
+import { getEffectiveScheduleStatus, getStudentAssignmentAction } from '../../../utils/assignmentStatus';
 import { getErrorMessage } from '../../../services/errorHandler';
 import { canViewCourseStudents } from '../../watcher/utils/coursePermissions';
 import {
@@ -798,9 +799,7 @@ const WebIDECourses = () => {
                               .filter(assignment => assignment.lifecycleStatus !== 'ARCHIVED')
                               .map((assignment) => {
                               const studentCourse = course.courseRole === 'STUDENT';
-                              const assignmentReady = assignment.lifecycleStatus === 'ACTIVE' &&
-                                getEffectiveScheduleStatus(assignment) === 'OPEN' &&
-                                !assignment.starterDistributionPending;
+                              const assignmentAction = getStudentAssignmentAction(assignment);
                               return (
                               <Box
                                 key={assignment.assignmentId}
@@ -840,9 +839,13 @@ const WebIDECourses = () => {
                                 {studentCourse && <Button
                                   size="small"
                                   variant="outlined"
-                                  startIcon={<CodeIcon sx={{ fontSize: '0.8rem' }} />}
+                                  color={assignmentAction.readOnly ? 'inherit' : 'primary'}
+                                  title={assignmentAction.readOnly ? '마감된 과제를 읽기 전용으로 엽니다' : undefined}
+                                  startIcon={assignmentAction.readOnly
+                                    ? <VisibilityOutlinedIcon sx={{ fontSize: '0.8rem' }} />
+                                    : <CodeIcon sx={{ fontSize: '0.8rem' }} />}
                                   onClick={() => handleWebIDEOpen(course.courseId, false, assignment.assignmentId)}
-                                  disabled={actionLoading || !assignmentReady}
+                                  disabled={actionLoading || !assignmentAction.enabled}
                                   sx={{
                                     fontSize: '0.7rem',
                                     py: 0,
@@ -860,7 +863,7 @@ const WebIDECourses = () => {
                                     },
                                   }}
                                 >
-                                  IDE 열기
+                                  {assignmentAction.label}
                                 </Button>}
                               </Box>
                               );

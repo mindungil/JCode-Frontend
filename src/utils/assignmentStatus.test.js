@@ -1,4 +1,4 @@
-import { getAssignmentDeadlineTooltip, getAssignmentStatus } from './assignmentStatus';
+import { getAssignmentDeadlineTooltip, getAssignmentStatus, getStudentAssignmentAction } from './assignmentStatus';
 
 describe('getAssignmentStatus', () => {
   test.each([
@@ -75,5 +75,45 @@ describe('getAssignmentDeadlineTooltip', () => {
 
   test.each([null, '', 'not-a-date'])('handles missing or invalid deadline %p', (deadline) => {
     expect(getAssignmentDeadlineTooltip(deadline)).toBe('마감일 정보 없음');
+  });
+});
+
+describe('getStudentAssignmentAction', () => {
+  const now = new Date('2026-10-14T12:00:00');
+  const base = {
+    lifecycleStatus: 'ACTIVE',
+    scheduleStatus: 'OPEN',
+    kickoffDate: '2026-10-07T14:00:00',
+    deadlineDate: '2026-10-14T23:59:00',
+  };
+
+  test('open assignments are editable', () => {
+    expect(getStudentAssignmentAction(base, now)).toEqual({ label: 'IDE 열기', enabled: true, readOnly: false });
+    expect(getStudentAssignmentAction({ ...base, studentAccess: 'WRITE' }, now).enabled).toBe(true);
+  });
+
+  test('closed assignments open read-only only when the Backend allows it', () => {
+    const closed = { ...base, scheduleStatus: 'CLOSED', deadlineDate: '2026-10-02T23:59:00', finalizedAt: '2026-10-03T00:00:12' };
+    expect(getStudentAssignmentAction({ ...closed, studentAccess: 'READ_ONLY' }, now))
+      .toEqual({ label: '열람', enabled: true, readOnly: true });
+    expect(getStudentAssignmentAction({ ...closed, studentAccess: 'NONE' }, now).enabled).toBe(false);
+    // Older Backends do not send studentAccess.
+    expect(getStudentAssignmentAction(closed, now).enabled).toBe(false);
+  });
+
+  test('a stale list does not offer editing after the deadline or before kickoff', () => {
+    expect(getStudentAssignmentAction({ ...base, deadlineDate: '2026-10-14T11:59:00', studentAccess: 'WRITE' }, now).enabled)
+      .toBe(false);
+    expect(getStudentAssignmentAction({ ...base, kickoffDate: '2026-10-15T00:00:00' }, now).enabled).toBe(false);
+    expect(getStudentAssignmentAction({ ...base, starterDistributionPending: true }, now).enabled).toBe(false);
+  });
+
+  test('a reopen in progress keeps the finalized work viewable', () => {
+    expect(getStudentAssignmentAction({
+      ...base,
+      lifecycleStatus: 'PROVISIONING',
+      deadlineDate: '2026-10-20T23:59:00',
+      studentAccess: 'READ_ONLY',
+    }, now)).toEqual({ label: '열람', enabled: true, readOnly: true });
   });
 });
