@@ -47,14 +47,15 @@ export const getAssignmentStatus = (assignment = {}, now = new Date()) => {
 // Button state for a student's assignment row. The Backend reports READ_ONLY for
 // closed assignments the student can still view; older Backends omit studentAccess.
 export const getStudentAssignmentAction = (assignment = {}, now = new Date()) => {
+  // The Backend decides read-only access; the local clock may lag behind it.
+  if (assignment.studentAccess === 'READ_ONLY') {
+    return { label: '열람', enabled: true, readOnly: true };
+  }
   const writable = assignment.lifecycleStatus === 'ACTIVE' &&
     getEffectiveScheduleStatus(assignment, now) === 'OPEN' &&
     !assignment.starterDistributionPending &&
     assignment.studentAccess !== 'NONE';
   if (writable) return { label: 'IDE 열기', enabled: true, readOnly: false };
-  if (assignment.studentAccess === 'READ_ONLY') {
-    return { label: '열람', enabled: true, readOnly: true };
-  }
   return { label: 'IDE 열기', enabled: false, readOnly: false };
 };
 

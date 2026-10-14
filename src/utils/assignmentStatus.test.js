@@ -108,6 +108,11 @@ describe('getStudentAssignmentAction', () => {
     expect(getStudentAssignmentAction({ ...base, starterDistributionPending: true }, now).enabled).toBe(false);
   });
 
+  test('the Backend read-only decision wins over a lagging client clock', () => {
+    expect(getStudentAssignmentAction({ ...base, studentAccess: 'READ_ONLY' }, now))
+      .toEqual({ label: '열람', enabled: true, readOnly: true });
+  });
+
   test('a reopen in progress keeps the finalized work viewable', () => {
     expect(getStudentAssignmentAction({
       ...base,
