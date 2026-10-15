@@ -840,7 +840,9 @@ const WebIDECourses = () => {
                                   size="small"
                                   variant="outlined"
                                   color={assignmentAction.readOnly ? 'inherit' : 'primary'}
-                                  title={assignmentAction.readOnly ? '마감된 과제를 읽기 전용으로 엽니다' : undefined}
+                                  title={assignmentAction.readOnly
+                                    ? '마감된 과제를 읽기 전용으로 엽니다. 실행·수정하려면 파일을 내 작업공간에 복사하세요.'
+                                    : undefined}
                                   startIcon={assignmentAction.readOnly
                                     ? <VisibilityOutlinedIcon sx={{ fontSize: '0.8rem' }} />
                                     : <CodeIcon sx={{ fontSize: '0.8rem' }} />}
